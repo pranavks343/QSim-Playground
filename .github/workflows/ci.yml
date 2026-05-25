@@ -34,7 +34,10 @@ jobs:
         run: cd backend && ruff check .
 
       - name: Mypy typecheck
-        run: cd backend && mypy core api infra cli tests
+        run: cd backend && mypy core api infra cli scripts tests
+
+      - name: IR schema sync
+        run: cd backend && python scripts/check_ir_schema.py
 
       - name: Pytest
         run: cd backend && pytest --cov=core --cov=api --cov=infra --cov=cli --cov-report=term-missing --cov-fail-under=70

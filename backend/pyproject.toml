@@ -41,3 +41,4 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 addopts = "--strict-markers --strict-config"
 asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]

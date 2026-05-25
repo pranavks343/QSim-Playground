@@ -1,0 +1,198 @@
+{
+  "$defs": {
+    "Constraint": {
+      "additionalProperties": false,
+      "description": "Linear or quadratic constraint over known variables.",
+      "properties": {
+        "linear_terms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Linear Terms",
+          "type": "object"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "quadratic_terms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Quadratic Terms",
+          "type": "object"
+        },
+        "rhs": {
+          "title": "Rhs",
+          "type": "number"
+        },
+        "type": {
+          "$ref": "#/$defs/ConstraintType"
+        }
+      },
+      "required": [
+        "linear_terms",
+        "type",
+        "rhs"
+      ],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "ConstraintType": {
+      "description": "Supported constraint comparisons.",
+      "enum": [
+        "<=",
+        ">=",
+        "="
+      ],
+      "title": "ConstraintType",
+      "type": "string"
+    },
+    "Objective": {
+      "additionalProperties": false,
+      "description": "Problem objective.",
+      "properties": {
+        "constant": {
+          "default": 0.0,
+          "title": "Constant",
+          "type": "number"
+        },
+        "linear_terms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Linear Terms",
+          "type": "object"
+        },
+        "quadratic_terms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Quadratic Terms",
+          "type": "object"
+        },
+        "sense": {
+          "$ref": "#/$defs/ObjectiveSense"
+        }
+      },
+      "required": [
+        "sense"
+      ],
+      "title": "Objective",
+      "type": "object"
+    },
+    "ObjectiveSense": {
+      "description": "Objective direction.",
+      "enum": [
+        "minimize",
+        "maximize"
+      ],
+      "title": "ObjectiveSense",
+      "type": "string"
+    },
+    "Variable": {
+      "additionalProperties": false,
+      "description": "Optimization decision variable.",
+      "properties": {
+        "lower_bound": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lower Bound"
+        },
+        "name": {
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/VariableType"
+        },
+        "upper_bound": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upper Bound"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "Variable",
+      "type": "object"
+    },
+    "VariableType": {
+      "description": "Supported optimization variable domains.",
+      "enum": [
+        "binary",
+        "integer",
+        "continuous"
+      ],
+      "title": "VariableType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Normalized optimization problem IR.",
+  "properties": {
+    "constraints": {
+      "items": {
+        "$ref": "#/$defs/Constraint"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "metadata": {
+      "title": "Metadata",
+      "type": "object"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "objective": {
+      "$ref": "#/$defs/Objective"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/Variable"
+      },
+      "minItems": 1,
+      "title": "Variables",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "variables",
+    "objective"
+  ],
+  "title": "ProblemIR",
+  "type": "object"
+}
