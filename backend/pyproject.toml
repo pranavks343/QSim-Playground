@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qsim-playground"
+version = "0.1.0"
+description = "Multi-agent quantum optimization sandbox foundation."
+requires-python = ">=3.11,<3.12"
+license = { text = "MIT" }
+authors = [{ name = "KONDAPI SRI PRANAV" }]
+dependencies = []
+
+[tool.setuptools]
+packages = ["api", "cli", "core", "infra"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["qiskit.*", "qiskit_aer.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config"
+asyncio_default_fixture_loop_scope = "function"

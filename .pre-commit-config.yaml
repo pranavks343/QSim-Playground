@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: bash -c 'cd backend && mypy core api infra cli tests'
+        language: system
+        pass_filenames: false
+        files: ^backend/
+      - id: block-env-files
+        name: block committed env files
+        entry: python scripts/check_no_secrets.py --staged
+        language: python
+        pass_filenames: false
+      - id: block-secret-patterns
+        name: block common secret patterns
+        entry: python scripts/check_no_secrets.py --staged
+        language: python
+        pass_filenames: false
