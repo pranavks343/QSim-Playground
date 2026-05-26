@@ -1,1 +1,1 @@
-"""Typer CLI package."""
+"""Typer CLI package for QSim Playground."""

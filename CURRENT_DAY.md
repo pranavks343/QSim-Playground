@@ -1,5 +1,5 @@
 # Current Work
 
-Day 1, Block A: Repo and Environment Setup.
+Day 1 complete.
 
-Status: in progress.
+Next: Day 2, Block A: Gemini integration and base agent.

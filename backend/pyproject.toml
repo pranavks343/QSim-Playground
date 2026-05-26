@@ -11,6 +11,9 @@ license = { text = "MIT" }
 authors = [{ name = "KONDAPI SRI PRANAV" }]
 dependencies = []
 
+[project.scripts]
+qsim = "cli.main:app"
+
 [tool.setuptools]
 packages = ["api", "cli", "core", "infra"]
 
