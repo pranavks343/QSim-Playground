@@ -1,5 +1,5 @@
 # Current Work
 
-Day 3, Block A in progress.
+Day 3, Block B ready for Supabase apply.
 
-Current: Supabase project setup and backend client wiring.
+Current: Apply `backend/infra/migrations/001_initial_schema.sql` in Supabase and run RLS tests with real credentials.

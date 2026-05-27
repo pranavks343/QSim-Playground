@@ -7,6 +7,7 @@ from pathlib import Path
 
 import structlog
 from supabase import Client, create_client
+from supabase.lib.client_options import SyncClientOptions
 
 from infra.settings import get_settings
 
@@ -34,6 +35,17 @@ def get_service_client() -> Client:
         )
     settings = get_settings()
     return create_client(settings.supabase_url, settings.supabase_service_role_key)
+
+
+def get_user_client(access_token: str) -> Client:
+    """Return an anon-key client authenticated with a user JWT."""
+
+    settings = get_settings()
+    return create_client(
+        settings.supabase_url,
+        settings.supabase_anon_key,
+        options=SyncClientOptions(headers={"Authorization": f"Bearer {access_token}"}),
+    )
 
 
 def _called_from_request_handler() -> bool:

@@ -31,5 +31,28 @@ cd backend
 python -m pytest tests/test_supabase_connection.py
 ```
 
+## Apply Database Schema
+
+1. Open Supabase -> SQL Editor.
+2. Paste and run `backend/infra/migrations/001_initial_schema.sql`.
+3. Confirm Table Editor shows:
+   - `users_profile`
+   - `runs`
+   - `run_events`
+   - `exports`
+   - `rate_limit_log`
+4. Confirm RLS is enabled on all five tables.
+5. Confirm Database -> Replication/Realtime includes `run_events`.
+6. Confirm pg_cron jobs exist:
+   - `qsim-reset-monthly-quotas`
+   - `qsim-delete-stale-rate-limit-log`
+   - `qsim-free-tier-retention`
+7. Verify isolation locally:
+
+```bash
+cd backend
+python -m pytest tests/test_rls.py
+```
+
 TODO Day 5: re-enable email confirmation before production launch and update the Site URL and
 Redirect URLs to the Vercel production domain.
