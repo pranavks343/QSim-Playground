@@ -38,3 +38,4 @@ AgentDecorator = Callable[[type[QUBOAgent]], type[QUBOAgent]]
 
 
 from core.agents import penalty as penalty  # noqa: E402
+from core.agents import slack as slack  # noqa: E402
