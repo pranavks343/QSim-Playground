@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from typing import cast
+from typing import Literal, cast
 
 import pytest
 
 from core.agents.base import AgentContext, QUBOAgent, QUBOOutput
+from core.agents.critic import CriticVerdict
+from core.agents.refiner import RefinedQUBO, no_improvement_refinement
+from core.evaluator import ComparisonTable, Scorecard
 from core.orchestrator import (
     AGENT_NAMES,
     EventCallback,
@@ -51,6 +54,43 @@ class StaticAgent(QUBOAgent):
         )
 
 
+class StaticCriticAgent:
+    async def judge(self, comparison_table: ComparisonTable) -> CriticVerdict:
+        top = comparison_table.scorecards[0]
+        runner_up = comparison_table.scorecards[1]
+        rejected = [scorecard.agent_name for scorecard in comparison_table.scorecards[2:]]
+        confidence: Literal["high", "medium", "low"] = (
+            "high"
+            if top.composite_score - runner_up.composite_score >= 1.0
+            else "low"
+            if top.composite_score - runner_up.composite_score < 0.25
+            else "medium"
+        )
+        return CriticVerdict(
+            winner_agent=top.agent_name,
+            runner_up_agent=runner_up.agent_name,
+            rejected_agents=rejected,
+            rationale=(
+                f"{top.agent_name} wins with composite_score={top.composite_score} and "
+                f"qubit_count={top.qubit_count}; {runner_up.agent_name} follows with "
+                f"composite_score={runner_up.composite_score}."
+            ),
+            confidence=confidence,
+        )
+
+
+class StaticRefinerAgent:
+    async def refine(
+        self,
+        winner_qubo: QUBOOutput,
+        scorecard: Scorecard,
+        *,
+        with_hints: bool = False,
+    ) -> RefinedQUBO:
+        del scorecard, with_hints
+        return no_improvement_refinement(winner_qubo)
+
+
 def _agent_factories(
     failing_agents: set[str] | None = None,
     delays: dict[str, float] | None = None,
@@ -80,6 +120,14 @@ def _patch_agent_factories(
         "core.orchestrator._default_agent_factories",
         lambda: _agent_factories(failing_agents=failing_agents, delays=delays),
     )
+    monkeypatch.setattr(
+        "core.orchestrator._default_critic_factory",
+        lambda: lambda: StaticCriticAgent(),
+    )
+    monkeypatch.setattr(
+        "core.orchestrator._default_refiner_factory",
+        lambda: lambda: StaticRefinerAgent(),
+    )
 
 
 @pytest.mark.asyncio
@@ -95,9 +143,9 @@ async def test_full_pipeline_runs_on_templates(
     assert state.get("pipeline_failed") is False
     assert len(state["qubos"]) == 5
     assert len(state["scorecards"]) == 5
-    assert state["critic_verdict"].winner_agent_name in state["qubos"]
-    assert state["comparison_table"].top_agent == state["critic_verdict"].winner_agent_name
-    assert state["refined_qubo"].agent_name == state["critic_verdict"].winner_agent_name
+    assert state["critic_verdict"].winner_agent in state["qubos"]
+    assert state["comparison_table"].top_agent == state["critic_verdict"].winner_agent
+    assert state["refined_qubo"].agent_name == state["critic_verdict"].winner_agent
     assert state["circuit_data"].qubit_count == state["refined_qubo"].estimated_qubits
     assert state["sim_result"].best_bitstring
     assert state["classical_result"].feasible is True
@@ -182,7 +230,7 @@ async def test_low_score_critic_path_retries_refiner_once(
     assert len(refiner_events) == 2
     assert refiner_events[0].payload["with_hints"] is True
     assert refiner_events[1].payload["with_hints"] is False
-    assert state["critic_verdict"].proceed_with_low_score is True
+    assert refiner_events[1].payload["low_score_proceed"] is True
     assert state["events"][-1].event_type == "pipeline_done"
 
 

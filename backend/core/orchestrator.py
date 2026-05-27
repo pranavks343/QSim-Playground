@@ -11,10 +11,12 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.agents.base import AgentContext, QUBOAgent, QUBOOutput
+from core.agents.critic import CriticAgent, CriticVerdict
 from core.agents.decomp import DecompositionAgent
 from core.agents.domain import DomainAgent
 from core.agents.graph import GraphAgent
 from core.agents.penalty import PenaltyAgent
+from core.agents.refiner import RefinedQUBO, RefinerAgent
 from core.agents.slack import SlackAgent
 from core.evaluator import (
     ComparisonTable,
@@ -42,6 +44,8 @@ EventType = Literal[
 ]
 EventCallback = Callable[["PipelineEvent"], Awaitable[None]]
 AgentFactory = Callable[[], QUBOAgent]
+CriticFactory = Callable[[], CriticAgent]
+RefinerFactory = Callable[[], RefinerAgent]
 PipelineUpdate = dict[str, Any]
 
 MIN_SUCCESSFUL_AGENTS = 3
@@ -72,20 +76,6 @@ class PipelineError(BaseModel):
     error_type: str
     timestamp: datetime
     run_id: str
-
-
-class CriticVerdict(BaseModel):
-    """Critic selection among evaluated QUBOs."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    winner_agent_name: str
-    runner_up_agent_name: str | None = None
-    rejected_agent_names: list[str] = Field(default_factory=list)
-    best_score: float = Field(ge=0.0, le=10.0)
-    justification: str
-    retry_count: int = 0
-    proceed_with_low_score: bool = False
 
 
 class CircuitData(BaseModel):
@@ -141,7 +131,7 @@ class PipelineState(TypedDict, total=False):
     scorecards: Annotated[dict[str, Scorecard], _merge_dict]
     comparison_table: ComparisonTable
     critic_verdict: CriticVerdict
-    refined_qubo: QUBOOutput
+    refined_qubo: RefinedQUBO
     circuit_data: CircuitData
     sim_result: SimulationResult
     classical_result: ClassicalResult
@@ -198,47 +188,16 @@ def _default_agent_factories() -> dict[str, AgentFactory]:
     }
 
 
-def _select_winner(scorecards: dict[str, Scorecard]) -> CriticVerdict:
-    ordered = sorted(
-        scorecards.values(), key=lambda scorecard: scorecard.composite_score, reverse=True
-    )
-    winner = ordered[0]
-    runner_up = ordered[1] if len(ordered) > 1 else None
-    rejected = [scorecard.agent_name for scorecard in ordered[2:]]
-    runner_text = (
-        f"{runner_up.agent_name} is close runner-up because of score "
-        f"{runner_up.composite_score:g}; "
-        if runner_up
-        else ""
-    )
-    return CriticVerdict(
-        winner_agent_name=winner.agent_name,
-        runner_up_agent_name=runner_up.agent_name if runner_up else None,
-        rejected_agent_names=rejected,
-        best_score=winner.composite_score,
-        justification=(
-            f"{winner.agent_name} wins because it has the strongest aggregate score "
-            f"({winner.composite_score:g}). {runner_text}"
-            f"Rejected agents: {', '.join(rejected) if rejected else 'none'}."
-        ),
-    )
+def _default_critic_factory() -> CriticFactory:
+    settings = get_settings()
+    client = GeminiClient(settings.gemini_api_keys)
+    return lambda: CriticAgent(client)
 
 
-def _refine_qubo(winner: QUBOOutput, with_hints: bool) -> QUBOOutput:
-    parameters = dict(winner.parameters_used)
-    parameters["refined"] = True
-    parameters["refinement_mode"] = "hints" if with_hints else "standard"
-    strategy_suffix = " with critic hints" if with_hints else " with targeted refinement"
-    return winner.model_copy(
-        update={
-            "strategy": f"{winner.strategy}{strategy_suffix}",
-            "parameters_used": parameters,
-            "justification": (
-                f"{winner.justification} Refiner applied targeted checks for penalty scale, "
-                "redundant terms, and constraint simplification."
-            )[:1000],
-        }
-    )
+def _default_refiner_factory() -> RefinerFactory:
+    settings = get_settings()
+    client = GeminiClient(settings.gemini_api_keys)
+    return lambda: RefinerAgent(client)
 
 
 def _qubo_energy(output: QUBOOutput, bitstring: str) -> float:
@@ -370,14 +329,10 @@ def _build_evaluator_node(
 
 def _build_critic_node(
     event_callback: EventCallback | None,
+    critic_factory: CriticFactory,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def critic_node(state: PipelineState) -> PipelineUpdate:
-        verdict = _select_winner(state["scorecards"])
-        retry_count = state.get("critic_retry_count", 0)
-        verdict.retry_count = retry_count
-        verdict.proceed_with_low_score = (
-            verdict.best_score < LOW_SCORE_THRESHOLD and retry_count >= 1
-        )
+        verdict = await critic_factory().judge(state["comparison_table"])
         event = await _emit(
             state,
             "critic_verdict",
@@ -391,16 +346,21 @@ def _build_critic_node(
 
 def _build_refiner_node(
     event_callback: EventCallback | None,
+    refiner_factory: RefinerFactory,
     with_hints: bool,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def refiner_node(state: PipelineState) -> PipelineUpdate:
-        winner_name = state["critic_verdict"].winner_agent_name
-        refined = _refine_qubo(state["qubos"][winner_name], with_hints=with_hints)
+        winner_name = state["critic_verdict"].winner_agent
+        refined = await refiner_factory().refine(
+            state["qubos"][winner_name],
+            state["scorecards"][winner_name],
+            with_hints=with_hints,
+        )
         payload = {
             "agent_name": winner_name,
             "with_hints": with_hints,
         }
-        if state["critic_verdict"].proceed_with_low_score:
+        if _top_score(state) < LOW_SCORE_THRESHOLD and state.get("critic_retry_count", 0) >= 1:
             payload["low_score_proceed"] = True
         event = await _emit(state, "refiner_done", payload, event_callback)
         update: PipelineUpdate = {"refined_qubo": refined, "events": [event]}
@@ -460,7 +420,7 @@ def _build_runner_node(
         pipeline_done = await _emit(
             state,
             "pipeline_done",
-            {"best_bitstring": bitstring, "winner": state["critic_verdict"].winner_agent_name},
+            {"best_bitstring": bitstring, "winner": state["critic_verdict"].winner_agent},
             event_callback,
         )
         return {
@@ -476,15 +436,20 @@ def _route_after_evaluator(state: PipelineState) -> str:
     return "failed" if state.get("pipeline_failed", False) else "ok"
 
 
+def _top_score(state: PipelineState) -> float:
+    return state["comparison_table"].scorecards[0].composite_score
+
+
 def _route_after_critic(state: PipelineState) -> str:
-    verdict = state["critic_verdict"]
-    if verdict.best_score < LOW_SCORE_THRESHOLD and state.get("critic_retry_count", 0) < 1:
+    if _top_score(state) < LOW_SCORE_THRESHOLD and state.get("critic_retry_count", 0) < 1:
         return "retry"
     return "continue"
 
 
 def _build_graph(event_callback: EventCallback | None) -> Any:
     factories = _default_agent_factories()
+    critic_factory = _default_critic_factory()
+    refiner_factory = _default_refiner_factory()
     graph = StateGraph(PipelineState)
 
     for agent_name in AGENT_NAMES:
@@ -493,9 +458,14 @@ def _build_graph(event_callback: EventCallback | None) -> Any:
         )
 
     graph.add_node("evaluator", _build_evaluator_node(event_callback))
-    graph.add_node("critic", _build_critic_node(event_callback))
-    graph.add_node("refiner", _build_refiner_node(event_callback, with_hints=False))
-    graph.add_node("refiner_with_hints", _build_refiner_node(event_callback, with_hints=True))
+    graph.add_node("critic", _build_critic_node(event_callback, critic_factory))
+    graph.add_node(
+        "refiner", _build_refiner_node(event_callback, refiner_factory, with_hints=False)
+    )
+    graph.add_node(
+        "refiner_with_hints",
+        _build_refiner_node(event_callback, refiner_factory, with_hints=True),
+    )
     graph.add_node("circuit_gen", _build_circuit_node(event_callback))
     graph.add_node("runner", _build_runner_node(event_callback))
 
