@@ -6,7 +6,7 @@ QSim Playground is a multi-agent quantum optimization sandbox for ML engineers.
 
 ## Status
 
-Day 1 foundation work is complete.
+Day 2 agent pipeline work is complete.
 
 ## Quickstart
 
@@ -39,6 +39,41 @@ Validate an IR JSON file:
 ```bash
 qsim load --template knapsack > /tmp/knapsack_ir.json
 qsim validate --file /tmp/knapsack_ir.json
+```
+
+Run the full local pipeline:
+
+```bash
+qsim run --template portfolio
+```
+
+Example output excerpt:
+
+```text
+QSim Pipeline
+portfolio
+Variables: 6 | Constraints: 1 | Run: cli-...
+
+Agent Formulations
+Comparison
+Rank  Agent    Score  Qubits  Sparsity  Condition  Sensitivity
+1     decomp   7.212  6       0.000     2.78       0.000
+2     graph    6.947  6       0.000     2.37       0.000
+
+Critic Verdict
+decomp wins with composite_score=7.212...
+
+Refiner Improvements
+- none — original was already near-optimal
+
+Simulation Results
+Best bitstring: 111110
+Objective: -0.4476
+Quality vs classical: 100.00%
+
+Execution Comparison
+Classical / Simulator / Hardware (Day 6+)
+Total wall-clock: 0.62s
 ```
 
 ## Planned Features

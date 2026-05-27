@@ -1,5 +1,5 @@
 # Current Work
 
-Day 1 complete.
+Day 2 complete.
 
-Next: Day 2, Block A: Gemini integration and base agent.
+Next: Day 3, Block A: Supabase project setup.

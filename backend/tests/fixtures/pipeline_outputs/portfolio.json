@@ -1,0 +1,1036 @@
+{
+  "circuit_data": {
+    "circuit_image_svg": null,
+    "depth": 50,
+    "gate_count": 120,
+    "qiskit_qasm": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\ninput float[64] _\u03b2_0_;\ninput float[64] _\u03b2_1_;\ninput float[64] _\u03b3_0_;\ninput float[64] _\u03b3_1_;\nqubit[6] q;\nh q[0];\nrz(0.0683*_\u03b3_0_) q[0];\nh q[1];\nrz(0.0862*_\u03b3_0_) q[1];\ncx q[0], q[1];\nrz(0.0072*_\u03b3_0_) q[1];\ncx q[0], q[1];\nh q[2];\nrz(0.0825*_\u03b3_0_) q[2];\ncx q[0], q[2];\nrz(0.0108*_\u03b3_0_) q[2];\ncx q[0], q[2];\ncx q[1], q[2];\nrz(0.0162*_\u03b3_0_) q[2];\ncx q[1], q[2];\nh q[3];\nrz(0.0608*_\u03b3_0_) q[3];\ncx q[0], q[3];\nrz(0.0054*_\u03b3_0_) q[3];\ncx q[0], q[3];\ncx q[1], q[3];\nrz(0.009*_\u03b3_0_) q[3];\ncx q[1], q[3];\ncx q[2], q[3];\nrz(0.0108*_\u03b3_0_) q[3];\ncx q[2], q[3];\nh q[4];\nrz(0.0814*_\u03b3_0_) q[4];\ncx q[0], q[4];\nrz(0.0144*_\u03b3_0_) q[4];\ncx q[0], q[4];\ncx q[1], q[4];\nrz(0.0198*_\u03b3_0_) q[4];\ncx q[1], q[4];\ncx q[2], q[4];\nrz(0.0252*_\u03b3_0_) q[4];\ncx q[2], q[4];\ncx q[3], q[4];\nrz(0.0126*_\u03b3_0_) q[4];\ncx q[3], q[4];\nh q[5];\nrz(0.0561*_\u03b3_0_) q[5];\ncx q[0], q[5];\nrz(0.009*_\u03b3_0_) q[5];\ncx q[0], q[5];\nrx(2.0*_\u03b2_0_) q[0];\nrz(0.0683*_\u03b3_1_) q[0];\ncx q[1], q[5];\nrz(0.0126*_\u03b3_0_) q[5];\ncx q[1], q[5];\nrx(2.0*_\u03b2_0_) q[1];\nrz(0.0862*_\u03b3_1_) q[1];\ncx q[0], q[1];\nrz(0.0072*_\u03b3_1_) q[1];\ncx q[0], q[1];\ncx q[2], q[5];\nrz(0.018*_\u03b3_0_) q[5];\ncx q[2], q[5];\nrx(2.0*_\u03b2_0_) q[2];\nrz(0.0825*_\u03b3_1_) q[2];\ncx q[0], q[2];\nrz(0.0108*_\u03b3_1_) q[2];\ncx q[0], q[2];\ncx q[1], q[2];\nrz(0.0162*_\u03b3_1_) q[2];\ncx q[1], q[2];\ncx q[3], q[5];\nrz(0.0072*_\u03b3_0_) q[5];\ncx q[3], q[5];\nrx(2.0*_\u03b2_0_) q[3];\nrz(0.0608*_\u03b3_1_) q[3];\ncx q[0], q[3];\nrz(0.0054*_\u03b3_1_) q[3];\ncx q[0], q[3];\ncx q[1], q[3];\nrz(0.009*_\u03b3_1_) q[3];\ncx q[1], q[3];\ncx q[2], q[3];\nrz(0.0108*_\u03b3_1_) q[3];\ncx q[2], q[3];\ncx q[4], q[5];\nrz(0.0216*_\u03b3_0_) q[5];\ncx q[4], q[5];\nrx(2.0*_\u03b2_0_) q[4];\nrz(0.0814*_\u03b3_1_) q[4];\ncx q[0], q[4];\nrz(0.0144*_\u03b3_1_) q[4];\ncx q[0], q[4];\ncx q[1], q[4];\nrz(0.0198*_\u03b3_1_) q[4];\ncx q[1], q[4];\ncx q[2], q[4];\nrz(0.0252*_\u03b3_1_) q[4];\ncx q[2], q[4];\ncx q[3], q[4];\nrz(0.0126*_\u03b3_1_) q[4];\ncx q[3], q[4];\nrx(2.0*_\u03b2_0_) q[5];\nrz(0.0561*_\u03b3_1_) q[5];\ncx q[0], q[5];\nrz(0.009*_\u03b3_1_) q[5];\ncx q[0], q[5];\nrx(2.0*_\u03b2_1_) q[0];\ncx q[1], q[5];\nrz(0.0126*_\u03b3_1_) q[5];\ncx q[1], q[5];\nrx(2.0*_\u03b2_1_) q[1];\ncx q[2], q[5];\nrz(0.018*_\u03b3_1_) q[5];\ncx q[2], q[5];\nrx(2.0*_\u03b2_1_) q[2];\ncx q[3], q[5];\nrz(0.0072*_\u03b3_1_) q[5];\ncx q[3], q[5];\nrx(2.0*_\u03b2_1_) q[3];\ncx q[4], q[5];\nrz(0.0216*_\u03b3_1_) q[5];\ncx q[4], q[5];\nrx(2.0*_\u03b2_1_) q[4];\nrx(2.0*_\u03b2_1_) q[5];\n",
+    "qubit_count": 6,
+    "reps": 2
+  },
+  "classical_result": {
+    "best_bitstring": "111110",
+    "best_objective": -0.4476,
+    "method": "deterministic_exhaustive_or_simulated_annealing",
+    "runtime_ms": 0.651167
+  },
+  "comparison_table": {
+    "runner_up": "graph",
+    "scorecards": [
+      {
+        "agent_name": "decomp",
+        "classical_baseline_objective": -0.4476,
+        "classical_baseline_runtime_ms": 0.220375,
+        "composite_score": 7.212023,
+        "condition_number": 2.7789636215344866,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      {
+        "agent_name": "graph",
+        "classical_baseline_objective": -0.25095,
+        "classical_baseline_runtime_ms": 0.173417,
+        "composite_score": 6.947395,
+        "condition_number": 2.367399096891631,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      {
+        "agent_name": "penalty",
+        "classical_baseline_objective": -5.026,
+        "classical_baseline_runtime_ms": 0.169208,
+        "composite_score": 5.07596,
+        "condition_number": 27.384049919110243,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      {
+        "agent_name": "domain",
+        "classical_baseline_objective": -6.2562,
+        "classical_baseline_runtime_ms": 0.169708,
+        "composite_score": 4.986779,
+        "condition_number": 28.4300095394001,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      {
+        "agent_name": "slack",
+        "classical_baseline_objective": -7.3023,
+        "classical_baseline_runtime_ms": 0.167125,
+        "composite_score": 4.905572,
+        "condition_number": 38.142671099138774,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      }
+    ],
+    "top_agent": "decomp"
+  },
+  "critic_verdict": {
+    "confidence": "medium",
+    "rationale": "decomp wins with composite_score=7.21202, qubit_count=6, sparsity=0, condition_number=2.77896, and penalty_sensitivity=0. graph is runner-up with composite_score=6.9474; rejected agents are penalty, domain, slack.",
+    "rejected_agents": [
+      "penalty",
+      "domain",
+      "slack"
+    ],
+    "runner_up_agent": "graph",
+    "winner_agent": "decomp"
+  },
+  "errors": [],
+  "events": [
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "decomp"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479632Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "decomp",
+        "estimated_qubits": 6
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479665Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "domain"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479670Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "domain",
+        "estimated_qubits": 6
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479709Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "graph"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479596Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "graph",
+        "estimated_qubits": 6
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479628Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "penalty"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479397Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "penalty",
+        "estimated_qubits": 6
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479525Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "slack"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479533Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "slack",
+        "estimated_qubits": 6
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.479591Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "decomp",
+        "classical_baseline_objective": -0.4476,
+        "classical_baseline_runtime_ms": 0.220375,
+        "composite_score": 7.212023,
+        "condition_number": 2.7789636215344866,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.484883Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "domain",
+        "classical_baseline_objective": -6.2562,
+        "classical_baseline_runtime_ms": 0.169708,
+        "composite_score": 4.986779,
+        "condition_number": 28.4300095394001,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.485847Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "graph",
+        "classical_baseline_objective": -0.25095,
+        "classical_baseline_runtime_ms": 0.173417,
+        "composite_score": 6.947395,
+        "condition_number": 2.367399096891631,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.486159Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "penalty",
+        "classical_baseline_objective": -5.026,
+        "classical_baseline_runtime_ms": 0.169208,
+        "composite_score": 5.07596,
+        "condition_number": 27.384049919110243,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.487169Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "slack",
+        "classical_baseline_objective": -7.3023,
+        "classical_baseline_runtime_ms": 0.167125,
+        "composite_score": 4.905572,
+        "condition_number": 38.142671099138774,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 6,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.488041Z"
+    },
+    {
+      "event_type": "comparison_ready",
+      "payload": {
+        "runner_up": "graph",
+        "scorecards": [
+          {
+            "agent_name": "decomp",
+            "classical_baseline_objective": -0.4476,
+            "classical_baseline_runtime_ms": 0.220375,
+            "composite_score": 7.212023,
+            "condition_number": 2.7789636215344866,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 6,
+            "sparsity": 0.0
+          },
+          {
+            "agent_name": "graph",
+            "classical_baseline_objective": -0.25095,
+            "classical_baseline_runtime_ms": 0.173417,
+            "composite_score": 6.947395,
+            "condition_number": 2.367399096891631,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 6,
+            "sparsity": 0.0
+          },
+          {
+            "agent_name": "penalty",
+            "classical_baseline_objective": -5.026,
+            "classical_baseline_runtime_ms": 0.169208,
+            "composite_score": 5.07596,
+            "condition_number": 27.384049919110243,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 6,
+            "sparsity": 0.0
+          },
+          {
+            "agent_name": "domain",
+            "classical_baseline_objective": -6.2562,
+            "classical_baseline_runtime_ms": 0.169708,
+            "composite_score": 4.986779,
+            "condition_number": 28.4300095394001,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 6,
+            "sparsity": 0.0
+          },
+          {
+            "agent_name": "slack",
+            "classical_baseline_objective": -7.3023,
+            "classical_baseline_runtime_ms": 0.167125,
+            "composite_score": 4.905572,
+            "condition_number": 38.142671099138774,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 6,
+            "sparsity": 0.0
+          }
+        ],
+        "top_agent": "decomp"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.488077Z"
+    },
+    {
+      "event_type": "critic_verdict",
+      "payload": {
+        "confidence": "medium",
+        "rationale": "decomp wins with composite_score=7.21202, qubit_count=6, sparsity=0, condition_number=2.77896, and penalty_sensitivity=0. graph is runner-up with composite_score=6.9474; rejected agents are penalty, domain, slack.",
+        "rejected_agents": [
+          "penalty",
+          "domain",
+          "slack"
+        ],
+        "runner_up_agent": "graph",
+        "winner_agent": "decomp"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.489803Z"
+    },
+    {
+      "event_type": "refiner_done",
+      "payload": {
+        "agent_name": "decomp",
+        "with_hints": false
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.491426Z"
+    },
+    {
+      "event_type": "circuit_ready",
+      "payload": {
+        "depth": 50,
+        "gate_count": 120,
+        "qubit_count": 6
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:15.911271Z"
+    },
+    {
+      "event_type": "simulation_done",
+      "payload": {
+        "best_bitstring": "111110",
+        "best_objective": -0.4476,
+        "quality_vs_classical": 100.0
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:16.095272Z"
+    },
+    {
+      "event_type": "pipeline_done",
+      "payload": {
+        "best_bitstring": "111110",
+        "winner": "decomp"
+      },
+      "run_id": "cli-9d92ab4cf028",
+      "timestamp": "2026-05-27T10:03:16.095283Z"
+    }
+  ],
+  "ir": {
+    "constraints": [
+      {
+        "linear_terms": {
+          "x_0": 1.0,
+          "x_1": 1.0,
+          "x_2": 1.0,
+          "x_3": 1.0,
+          "x_4": 1.0,
+          "x_5": 1.0
+        },
+        "name": "select_exactly_three_assets",
+        "quadratic_terms": {},
+        "rhs": 3.0,
+        "type": "="
+      }
+    ],
+    "description": "Select exactly three assets while trading off expected return against risk.",
+    "metadata": {
+      "covariance": [
+        [
+          0.021,
+          0.004,
+          0.006,
+          0.003,
+          0.008,
+          0.005
+        ],
+        [
+          0.004,
+          0.03,
+          0.009,
+          0.005,
+          0.011,
+          0.007
+        ],
+        [
+          0.006,
+          0.009,
+          0.045,
+          0.006,
+          0.014,
+          0.01
+        ],
+        [
+          0.003,
+          0.005,
+          0.006,
+          0.018,
+          0.007,
+          0.004
+        ],
+        [
+          0.008,
+          0.011,
+          0.014,
+          0.007,
+          0.05,
+          0.012
+        ],
+        [
+          0.005,
+          0.007,
+          0.01,
+          0.004,
+          0.012,
+          0.035
+        ]
+      ],
+      "expected_optimal_value": -0.5980000000000001,
+      "return_weight": 2.0,
+      "returns": [
+        0.08,
+        0.11,
+        0.13,
+        0.09,
+        0.15,
+        0.12
+      ],
+      "risk_weight": 1.0,
+      "template": "portfolio"
+    },
+    "name": "portfolio",
+    "objective": {
+      "constant": 0.0,
+      "linear_terms": {
+        "x_0": -0.139,
+        "x_1": -0.19,
+        "x_2": -0.21500000000000002,
+        "x_3": -0.162,
+        "x_4": -0.25,
+        "x_5": -0.205
+      },
+      "quadratic_terms": {
+        "x_0,x_1": 0.008,
+        "x_0,x_2": 0.012,
+        "x_0,x_3": 0.006,
+        "x_0,x_4": 0.016,
+        "x_0,x_5": 0.01,
+        "x_1,x_2": 0.018,
+        "x_1,x_3": 0.01,
+        "x_1,x_4": 0.022,
+        "x_1,x_5": 0.014,
+        "x_2,x_3": 0.012,
+        "x_2,x_4": 0.028,
+        "x_2,x_5": 0.02,
+        "x_3,x_4": 0.014,
+        "x_3,x_5": 0.008,
+        "x_4,x_5": 0.024
+      },
+      "sense": "minimize"
+    },
+    "variables": [
+      {
+        "name": "x_0",
+        "type": "binary"
+      },
+      {
+        "name": "x_1",
+        "type": "binary"
+      },
+      {
+        "name": "x_2",
+        "type": "binary"
+      },
+      {
+        "name": "x_3",
+        "type": "binary"
+      },
+      {
+        "name": "x_4",
+        "type": "binary"
+      },
+      {
+        "name": "x_5",
+        "type": "binary"
+      }
+    ]
+  },
+  "pipeline_failed": false,
+  "qubos": {
+    "decomp": {
+      "agent_name": "decomp",
+      "estimated_qubits": 6,
+      "justification": "The decomposition strategy sees 6 variables, so it keeps a monolithic QUBO and avoids unnecessary boundary-variable reconciliation.",
+      "parameters_used": {
+        "decomposed": false,
+        "subproblems": []
+      },
+      "q_matrix": [
+        [
+          -0.11510000000000002,
+          0.007200000000000001,
+          0.0108,
+          0.0054,
+          0.014400000000000001,
+          0.009000000000000001
+        ],
+        [
+          0.007200000000000001,
+          -0.15100000000000002,
+          0.0162,
+          0.009000000000000001,
+          0.019799999999999998,
+          0.0126
+        ],
+        [
+          0.0108,
+          0.0162,
+          -0.16350000000000003,
+          0.0108,
+          0.0252,
+          0.018000000000000002
+        ],
+        [
+          0.0054,
+          0.009000000000000001,
+          0.0108,
+          -0.1058,
+          0.0126,
+          0.007200000000000001
+        ],
+        [
+          0.014400000000000001,
+          0.019799999999999998,
+          0.0252,
+          0.0126,
+          -0.175,
+          0.0216
+        ],
+        [
+          0.009000000000000001,
+          0.0126,
+          0.018000000000000002,
+          0.007200000000000001,
+          0.0216,
+          -0.1245
+        ]
+      ],
+      "strategy": "monolithic decomposition-aware QUBO",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5"
+      ]
+    },
+    "domain": {
+      "agent_name": "domain",
+      "estimated_qubits": 6,
+      "justification": "The domain-specific strategy cites Markowitz QUBO formulation and adapts the QUBO to the portfolio template before falling back to generic penalties.",
+      "parameters_used": {
+        "lambda": 0.625,
+        "reference": "Markowitz QUBO formulation"
+      },
+      "q_matrix": [
+        [
+          -3.2918,
+          0.6346,
+          0.6394,
+          0.6322,
+          0.6442,
+          0.637
+        ],
+        [
+          0.6346,
+          -3.3529999999999998,
+          0.6466,
+          0.637,
+          0.6514,
+          0.6418
+        ],
+        [
+          0.6394,
+          0.6466,
+          -3.383,
+          0.6394,
+          0.6586,
+          0.649
+        ],
+        [
+          0.6322,
+          0.637,
+          0.6394,
+          -3.3194,
+          0.6418,
+          0.6346
+        ],
+        [
+          0.6442,
+          0.6514,
+          0.6586,
+          0.6418,
+          -3.425,
+          0.6538
+        ],
+        [
+          0.637,
+          0.6418,
+          0.649,
+          0.6346,
+          0.6538,
+          -3.371
+        ]
+      ],
+      "strategy": "domain-specific formulation citing Markowitz QUBO formulation",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5"
+      ]
+    },
+    "graph": {
+      "agent_name": "graph",
+      "estimated_qubits": 6,
+      "justification": "The graph strategy uses canonical graph structure when present and otherwise keeps a sparse graph-inspired QUBO without forcing a false graph model.",
+      "parameters_used": {
+        "detected_graph_problem": false
+      },
+      "q_matrix": [
+        [
+          -0.04865,
+          0.0028,
+          0.0042,
+          0.0021,
+          0.0056,
+          0.0034999999999999996
+        ],
+        [
+          0.0028,
+          -0.06649999999999999,
+          0.006299999999999999,
+          0.0034999999999999996,
+          0.007699999999999999,
+          0.0049
+        ],
+        [
+          0.0042,
+          0.006299999999999999,
+          -0.07525,
+          0.0042,
+          0.0098,
+          0.006999999999999999
+        ],
+        [
+          0.0021,
+          0.0034999999999999996,
+          0.0042,
+          -0.0567,
+          0.0049,
+          0.0028
+        ],
+        [
+          0.0056,
+          0.007699999999999999,
+          0.0098,
+          0.0049,
+          -0.0875,
+          0.0084
+        ],
+        [
+          0.0034999999999999996,
+          0.0049,
+          0.006999999999999999,
+          0.0028,
+          0.0084,
+          -0.07175
+        ]
+      ],
+      "strategy": "graph canonical encoding",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5"
+      ]
+    },
+    "penalty": {
+      "agent_name": "penalty",
+      "estimated_qubits": 6,
+      "justification": "The penalty strategy uses lambda=0.5, twice the largest objective coefficient, to price feasibility above one-term objective gains.",
+      "parameters_used": {
+        "lambda": 0.5
+      },
+      "q_matrix": [
+        [
+          -2.6390000000000002,
+          0.508,
+          0.512,
+          0.506,
+          0.516,
+          0.51
+        ],
+        [
+          0.508,
+          -2.69,
+          0.518,
+          0.51,
+          0.522,
+          0.514
+        ],
+        [
+          0.512,
+          0.518,
+          -2.715,
+          0.512,
+          0.528,
+          0.52
+        ],
+        [
+          0.506,
+          0.51,
+          0.512,
+          -2.662,
+          0.514,
+          0.508
+        ],
+        [
+          0.516,
+          0.522,
+          0.528,
+          0.514,
+          -2.75,
+          0.524
+        ],
+        [
+          0.51,
+          0.514,
+          0.52,
+          0.508,
+          0.524,
+          -2.705
+        ]
+      ],
+      "strategy": "penalty-based with lambda=0.5",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5"
+      ]
+    },
+    "slack": {
+      "agent_name": "slack",
+      "estimated_qubits": 6,
+      "justification": "The slack strategy adds 0 ancilla qubits for exact inequality encoding, trading search-space size for feasibility clarity.",
+      "parameters_used": {
+        "ancilla_qubits": 0,
+        "lambda": 0.75
+      },
+      "q_matrix": [
+        [
+          -3.89595,
+          0.7584,
+          0.7626,
+          0.7563,
+          0.7668,
+          0.7605
+        ],
+        [
+          0.7584,
+          -3.9495,
+          0.7689,
+          0.7605,
+          0.7731,
+          0.7647
+        ],
+        [
+          0.7626,
+          0.7689,
+          -3.97575,
+          0.7626,
+          0.7794,
+          0.771
+        ],
+        [
+          0.7563,
+          0.7605,
+          0.7626,
+          -3.9201,
+          0.7647,
+          0.7584
+        ],
+        [
+          0.7668,
+          0.7731,
+          0.7794,
+          0.7647,
+          -4.0125,
+          0.7752
+        ],
+        [
+          0.7605,
+          0.7647,
+          0.771,
+          0.7584,
+          0.7752,
+          -3.96525
+        ]
+      ],
+      "strategy": "slack-variable exact encoding with 0 ancilla qubits",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5"
+      ]
+    }
+  },
+  "refined_qubo": {
+    "agent_name": "decomp",
+    "estimated_qubits": 6,
+    "expected_improvement": "No targeted improvement was applied because the winning QUBO was already near-optimal under the deterministic scorecard metrics.",
+    "improvements_made": [
+      "none \u2014 original was already near-optimal"
+    ],
+    "justification": "The decomposition strategy sees 6 variables, so it keeps a monolithic QUBO and avoids unnecessary boundary-variable reconciliation.",
+    "original_agent": "decomp",
+    "parameters_used": {
+      "decomposed": false,
+      "subproblems": []
+    },
+    "q_matrix": [
+      [
+        -0.11510000000000002,
+        0.007200000000000001,
+        0.0108,
+        0.0054,
+        0.014400000000000001,
+        0.009000000000000001
+      ],
+      [
+        0.007200000000000001,
+        -0.15100000000000002,
+        0.0162,
+        0.009000000000000001,
+        0.019799999999999998,
+        0.0126
+      ],
+      [
+        0.0108,
+        0.0162,
+        -0.16350000000000003,
+        0.0108,
+        0.0252,
+        0.018000000000000002
+      ],
+      [
+        0.0054,
+        0.009000000000000001,
+        0.0108,
+        -0.1058,
+        0.0126,
+        0.007200000000000001
+      ],
+      [
+        0.014400000000000001,
+        0.019799999999999998,
+        0.0252,
+        0.0126,
+        -0.175,
+        0.0216
+      ],
+      [
+        0.009000000000000001,
+        0.0126,
+        0.018000000000000002,
+        0.007200000000000001,
+        0.0216,
+        -0.1245
+      ]
+    ],
+    "strategy": "monolithic decomposition-aware QUBO",
+    "variable_order": [
+      "x_0",
+      "x_1",
+      "x_2",
+      "x_3",
+      "x_4",
+      "x_5"
+    ]
+  },
+  "run_id": "cli-9d92ab4cf028",
+  "scorecards": {
+    "decomp": {
+      "agent_name": "decomp",
+      "classical_baseline_objective": -0.4476,
+      "classical_baseline_runtime_ms": 0.220375,
+      "composite_score": 7.212023,
+      "condition_number": 2.7789636215344866,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 6,
+      "sparsity": 0.0
+    },
+    "domain": {
+      "agent_name": "domain",
+      "classical_baseline_objective": -6.2562,
+      "classical_baseline_runtime_ms": 0.169708,
+      "composite_score": 4.986779,
+      "condition_number": 28.4300095394001,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 6,
+      "sparsity": 0.0
+    },
+    "graph": {
+      "agent_name": "graph",
+      "classical_baseline_objective": -0.25095,
+      "classical_baseline_runtime_ms": 0.173417,
+      "composite_score": 6.947395,
+      "condition_number": 2.367399096891631,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 6,
+      "sparsity": 0.0
+    },
+    "penalty": {
+      "agent_name": "penalty",
+      "classical_baseline_objective": -5.026,
+      "classical_baseline_runtime_ms": 0.169208,
+      "composite_score": 5.07596,
+      "condition_number": 27.384049919110243,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 6,
+      "sparsity": 0.0
+    },
+    "slack": {
+      "agent_name": "slack",
+      "classical_baseline_objective": -7.3023,
+      "classical_baseline_runtime_ms": 0.167125,
+      "composite_score": 4.905572,
+      "condition_number": 38.142671099138774,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 6,
+      "sparsity": 0.0
+    }
+  },
+  "sim_result": {
+    "best_bitstring": "111110",
+    "best_objective": -0.4476,
+    "quality_vs_classical": 100.0,
+    "runtime_ms": 182.4356660072226,
+    "top_5_bitstrings": [
+      [
+        "111110",
+        32,
+        -0.4476
+      ],
+      [
+        "111101",
+        22,
+        -0.4475
+      ],
+      [
+        "111111",
+        27,
+        -0.4353
+      ],
+      [
+        "110111",
+        23,
+        -0.4338
+      ],
+      [
+        "111011",
+        27,
+        -0.4195
+      ]
+    ],
+    "total_shots": 1024
+  },
+  "template_metadata": {
+    "constraint_count": 1,
+    "description": "Select exactly three assets while balancing expected return and risk.",
+    "difficulty": "medium",
+    "display_name": "Portfolio Optimization",
+    "domain_tags": [
+      "finance",
+      "selection",
+      "quadratic"
+    ],
+    "expected_optimal_value": -0.5980000000000001,
+    "name": "portfolio",
+    "variable_count": 6
+  },
+  "wall_clock_ms": 624.024
+}

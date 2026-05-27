@@ -1,0 +1,1780 @@
+{
+  "circuit_data": {
+    "circuit_image_svg": null,
+    "depth": 5,
+    "gate_count": 50,
+    "qiskit_qasm": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\ninput float[64] _\u03b2_0_;\ninput float[64] _\u03b2_1_;\ninput float[64] _\u03b3_0_;\ninput float[64] _\u03b3_1_;\nqubit[10] q;\nh q[0];\nrz(8.4*_\u03b3_0_) q[0];\nrx(2.0*_\u03b2_0_) q[0];\nrz(8.4*_\u03b3_1_) q[0];\nrx(2.0*_\u03b2_1_) q[0];\nh q[1];\nrz(11.2*_\u03b3_0_) q[1];\nrx(2.0*_\u03b2_0_) q[1];\nrz(11.2*_\u03b3_1_) q[1];\nrx(2.0*_\u03b2_1_) q[1];\nh q[2];\nrz(17.5*_\u03b3_0_) q[2];\nrx(2.0*_\u03b2_0_) q[2];\nrz(17.5*_\u03b3_1_) q[2];\nrx(2.0*_\u03b2_1_) q[2];\nh q[3];\nrz(6.3*_\u03b3_0_) q[3];\nrx(2.0*_\u03b2_0_) q[3];\nrz(6.3*_\u03b3_1_) q[3];\nrx(2.0*_\u03b2_1_) q[3];\nh q[4];\nrz(21.0*_\u03b3_0_) q[4];\nrx(2.0*_\u03b2_0_) q[4];\nrz(21.0*_\u03b3_1_) q[4];\nrx(2.0*_\u03b2_1_) q[4];\nh q[5];\nrz(9.45*_\u03b3_0_) q[5];\nrx(2.0*_\u03b2_0_) q[5];\nrz(9.45*_\u03b3_1_) q[5];\nrx(2.0*_\u03b2_1_) q[5];\nh q[6];\nrz(13.3*_\u03b3_0_) q[6];\nrx(2.0*_\u03b2_0_) q[6];\nrz(13.3*_\u03b3_1_) q[6];\nrx(2.0*_\u03b2_1_) q[6];\nh q[7];\nrz(4.55*_\u03b3_0_) q[7];\nrx(2.0*_\u03b2_0_) q[7];\nrz(4.55*_\u03b3_1_) q[7];\nrx(2.0*_\u03b2_1_) q[7];\nh q[8];\nrz(10.85*_\u03b3_0_) q[8];\nrx(2.0*_\u03b2_0_) q[8];\nrz(10.85*_\u03b3_1_) q[8];\nrx(2.0*_\u03b2_1_) q[8];\nh q[9];\nrz(7.0*_\u03b3_0_) q[9];\nrx(2.0*_\u03b2_0_) q[9];\nrz(7.0*_\u03b3_1_) q[9];\nrx(2.0*_\u03b2_1_) q[9];\n",
+    "qubit_count": 10,
+    "reps": 2
+  },
+  "classical_result": {
+    "best_bitstring": "1111111111",
+    "best_objective": -109.55,
+    "method": "deterministic_exhaustive_or_simulated_annealing",
+    "runtime_ms": 9.731082
+  },
+  "comparison_table": {
+    "runner_up": "decomp",
+    "scorecards": [
+      {
+        "agent_name": "graph",
+        "classical_baseline_objective": -109.55,
+        "classical_baseline_runtime_ms": 2.803792,
+        "composite_score": 7.514665,
+        "condition_number": 4.615384615384616,
+        "notes": "matrix is highly sparse",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 10,
+        "sparsity": 0.818182
+      },
+      {
+        "agent_name": "decomp",
+        "classical_baseline_objective": -281.15,
+        "classical_baseline_runtime_ms": 2.899083,
+        "composite_score": 7.264221,
+        "condition_number": 4.642857142857142,
+        "notes": "matrix is highly sparse",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 10,
+        "sparsity": 0.818182
+      },
+      {
+        "agent_name": "penalty",
+        "classical_baseline_objective": -1200193.0,
+        "classical_baseline_runtime_ms": 2.796583,
+        "composite_score": 4.35264,
+        "condition_number": 9.864301289545294,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.2,
+        "qubit_count": 10,
+        "sparsity": 0.0
+      },
+      {
+        "agent_name": "domain",
+        "classical_baseline_objective": -1500231.6,
+        "classical_baseline_runtime_ms": 2.795375,
+        "composite_score": 4.352556,
+        "condition_number": 9.864429196218927,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.2,
+        "qubit_count": 10,
+        "sparsity": 0.0
+      },
+      {
+        "agent_name": "slack",
+        "classical_baseline_objective": -1800026.85,
+        "classical_baseline_runtime_ms": 15.5415,
+        "composite_score": 3.493327,
+        "condition_number": 254.57482452494608,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 19,
+        "sparsity": 0.0
+      }
+    ],
+    "top_agent": "graph"
+  },
+  "critic_verdict": {
+    "confidence": "medium",
+    "rationale": "graph wins with composite_score=7.51466, qubit_count=10, sparsity=0.818182, condition_number=4.61538, and penalty_sensitivity=0. decomp is runner-up with composite_score=7.26422; rejected agents are penalty, domain, slack.",
+    "rejected_agents": [
+      "penalty",
+      "domain",
+      "slack"
+    ],
+    "runner_up_agent": "decomp",
+    "winner_agent": "graph"
+  },
+  "errors": [],
+  "events": [
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "decomp"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844205Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "decomp",
+        "estimated_qubits": 10
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844243Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "domain"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844248Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "domain",
+        "estimated_qubits": 10
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844298Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "graph"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844161Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "graph",
+        "estimated_qubits": 10
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844198Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "penalty"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.843879Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "penalty",
+        "estimated_qubits": 10
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844010Z"
+    },
+    {
+      "event_type": "agent_started",
+      "payload": {
+        "agent_name": "slack"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844018Z"
+    },
+    {
+      "event_type": "agent_done",
+      "payload": {
+        "agent_name": "slack",
+        "estimated_qubits": 19
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.844155Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "decomp",
+        "classical_baseline_objective": -281.15,
+        "classical_baseline_runtime_ms": 2.899083,
+        "composite_score": 7.264221,
+        "condition_number": 4.642857142857142,
+        "notes": "matrix is highly sparse",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 10,
+        "sparsity": 0.818182
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.848865Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "domain",
+        "classical_baseline_objective": -1500231.6,
+        "classical_baseline_runtime_ms": 2.795375,
+        "composite_score": 4.352556,
+        "condition_number": 9.864429196218927,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.2,
+        "qubit_count": 10,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.860260Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "graph",
+        "classical_baseline_objective": -109.55,
+        "classical_baseline_runtime_ms": 2.803792,
+        "composite_score": 7.514665,
+        "condition_number": 4.615384615384616,
+        "notes": "matrix is highly sparse",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 10,
+        "sparsity": 0.818182
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.863185Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "penalty",
+        "classical_baseline_objective": -1200193.0,
+        "classical_baseline_runtime_ms": 2.796583,
+        "composite_score": 4.35264,
+        "condition_number": 9.864301289545294,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.2,
+        "qubit_count": 10,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.874502Z"
+    },
+    {
+      "event_type": "scorecard_ready",
+      "payload": {
+        "agent_name": "slack",
+        "classical_baseline_objective": -1800026.85,
+        "classical_baseline_runtime_ms": 15.5415,
+        "composite_score": 3.493327,
+        "condition_number": 254.57482452494608,
+        "notes": "metrics are within expected ranges",
+        "penalty_sensitivity": 0.0,
+        "qubit_count": 19,
+        "sparsity": 0.0
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.937922Z"
+    },
+    {
+      "event_type": "comparison_ready",
+      "payload": {
+        "runner_up": "decomp",
+        "scorecards": [
+          {
+            "agent_name": "graph",
+            "classical_baseline_objective": -109.55,
+            "classical_baseline_runtime_ms": 2.803792,
+            "composite_score": 7.514665,
+            "condition_number": 4.615384615384616,
+            "notes": "matrix is highly sparse",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 10,
+            "sparsity": 0.818182
+          },
+          {
+            "agent_name": "decomp",
+            "classical_baseline_objective": -281.15,
+            "classical_baseline_runtime_ms": 2.899083,
+            "composite_score": 7.264221,
+            "condition_number": 4.642857142857142,
+            "notes": "matrix is highly sparse",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 10,
+            "sparsity": 0.818182
+          },
+          {
+            "agent_name": "penalty",
+            "classical_baseline_objective": -1200193.0,
+            "classical_baseline_runtime_ms": 2.796583,
+            "composite_score": 4.35264,
+            "condition_number": 9.864301289545294,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.2,
+            "qubit_count": 10,
+            "sparsity": 0.0
+          },
+          {
+            "agent_name": "domain",
+            "classical_baseline_objective": -1500231.6,
+            "classical_baseline_runtime_ms": 2.795375,
+            "composite_score": 4.352556,
+            "condition_number": 9.864429196218927,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.2,
+            "qubit_count": 10,
+            "sparsity": 0.0
+          },
+          {
+            "agent_name": "slack",
+            "classical_baseline_objective": -1800026.85,
+            "classical_baseline_runtime_ms": 15.5415,
+            "composite_score": 3.493327,
+            "condition_number": 254.57482452494608,
+            "notes": "metrics are within expected ranges",
+            "penalty_sensitivity": 0.0,
+            "qubit_count": 19,
+            "sparsity": 0.0
+          }
+        ],
+        "top_agent": "graph"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.937950Z"
+    },
+    {
+      "event_type": "critic_verdict",
+      "payload": {
+        "confidence": "medium",
+        "rationale": "graph wins with composite_score=7.51466, qubit_count=10, sparsity=0.818182, condition_number=4.61538, and penalty_sensitivity=0. decomp is runner-up with composite_score=7.26422; rejected agents are penalty, domain, slack.",
+        "rejected_agents": [
+          "penalty",
+          "domain",
+          "slack"
+        ],
+        "runner_up_agent": "decomp",
+        "winner_agent": "graph"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.939417Z"
+    },
+    {
+      "event_type": "refiner_done",
+      "payload": {
+        "agent_name": "graph",
+        "with_hints": false
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:27.940523Z"
+    },
+    {
+      "event_type": "circuit_ready",
+      "payload": {
+        "depth": 5,
+        "gate_count": 50,
+        "qubit_count": 10
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:28.179136Z"
+    },
+    {
+      "event_type": "simulation_done",
+      "payload": {
+        "best_bitstring": "1111111011",
+        "best_objective": -105.0,
+        "quality_vs_classical": 95.846645
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:28.404367Z"
+    },
+    {
+      "event_type": "pipeline_done",
+      "payload": {
+        "best_bitstring": "1111111011",
+        "winner": "graph"
+      },
+      "run_id": "cli-9b534ac974ea",
+      "timestamp": "2026-05-27T10:03:28.404376Z"
+    }
+  ],
+  "ir": {
+    "constraints": [
+      {
+        "linear_terms": {
+          "x_0": 12.0,
+          "x_1": 18.0,
+          "x_2": 25.0,
+          "x_3": 9.0,
+          "x_4": 30.0,
+          "x_5": 14.0,
+          "x_6": 21.0,
+          "x_7": 7.0,
+          "x_8": 16.0,
+          "x_9": 11.0
+        },
+        "name": "capacity",
+        "quadratic_terms": {},
+        "rhs": 100.0,
+        "type": "<="
+      }
+    ],
+    "description": "Choose a high-value subset of items without exceeding capacity.",
+    "metadata": {
+      "capacity": 100.0,
+      "expected_optimal_value": 196.0,
+      "items": [
+        {
+          "name": "calibrator",
+          "value": 24.0,
+          "weight": 12.0
+        },
+        {
+          "name": "sensor",
+          "value": 32.0,
+          "weight": 18.0
+        },
+        {
+          "name": "optimizer",
+          "value": 50.0,
+          "weight": 25.0
+        },
+        {
+          "name": "compiler",
+          "value": 18.0,
+          "weight": 9.0
+        },
+        {
+          "name": "sampler",
+          "value": 60.0,
+          "weight": 30.0
+        },
+        {
+          "name": "validator",
+          "value": 27.0,
+          "weight": 14.0
+        },
+        {
+          "name": "router",
+          "value": 38.0,
+          "weight": 21.0
+        },
+        {
+          "name": "cache",
+          "value": 13.0,
+          "weight": 7.0
+        },
+        {
+          "name": "monitor",
+          "value": 31.0,
+          "weight": 16.0
+        },
+        {
+          "name": "exporter",
+          "value": 20.0,
+          "weight": 11.0
+        }
+      ],
+      "template": "knapsack"
+    },
+    "name": "knapsack",
+    "objective": {
+      "constant": 0.0,
+      "linear_terms": {
+        "x_0": 24.0,
+        "x_1": 32.0,
+        "x_2": 50.0,
+        "x_3": 18.0,
+        "x_4": 60.0,
+        "x_5": 27.0,
+        "x_6": 38.0,
+        "x_7": 13.0,
+        "x_8": 31.0,
+        "x_9": 20.0
+      },
+      "quadratic_terms": {},
+      "sense": "maximize"
+    },
+    "variables": [
+      {
+        "name": "x_0",
+        "type": "binary"
+      },
+      {
+        "name": "x_1",
+        "type": "binary"
+      },
+      {
+        "name": "x_2",
+        "type": "binary"
+      },
+      {
+        "name": "x_3",
+        "type": "binary"
+      },
+      {
+        "name": "x_4",
+        "type": "binary"
+      },
+      {
+        "name": "x_5",
+        "type": "binary"
+      },
+      {
+        "name": "x_6",
+        "type": "binary"
+      },
+      {
+        "name": "x_7",
+        "type": "binary"
+      },
+      {
+        "name": "x_8",
+        "type": "binary"
+      },
+      {
+        "name": "x_9",
+        "type": "binary"
+      }
+    ]
+  },
+  "pipeline_failed": false,
+  "qubos": {
+    "decomp": {
+      "agent_name": "decomp",
+      "estimated_qubits": 10,
+      "justification": "The decomposition strategy sees 10 variables, so it keeps a monolithic QUBO and avoids unnecessary boundary-variable reconciliation.",
+      "parameters_used": {
+        "decomposed": false,
+        "subproblems": []
+      },
+      "q_matrix": [
+        [
+          -21.59,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -28.78,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -44.97,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          -16.16,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -53.95,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -24.240000000000002,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -34.13,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -11.620000000000001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -27.810000000000002,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -17.9
+        ]
+      ],
+      "strategy": "monolithic decomposition-aware QUBO",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5",
+        "x_6",
+        "x_7",
+        "x_8",
+        "x_9"
+      ]
+    },
+    "domain": {
+      "agent_name": "domain",
+      "estimated_qubits": 10,
+      "justification": "The domain-specific strategy cites Lucas (2014) and adapts the QUBO to the knapsack template before falling back to generic penalties.",
+      "parameters_used": {
+        "lambda": 150.0,
+        "reference": "Lucas (2014)"
+      },
+      "q_matrix": [
+        [
+          -338428.8,
+          32400.0,
+          45000.0,
+          16200.0,
+          54000.0,
+          25200.0,
+          37800.0,
+          12600.0,
+          28800.0,
+          19800.0
+        ],
+        [
+          32400.0,
+          -491438.4,
+          67500.0,
+          24300.0,
+          81000.0,
+          37800.0,
+          56700.0,
+          18900.0,
+          43200.0,
+          29700.0
+        ],
+        [
+          45000.0,
+          67500.0,
+          -656310.0,
+          33750.0,
+          112500.0,
+          52500.0,
+          78750.0,
+          26250.0,
+          60000.0,
+          41250.0
+        ],
+        [
+          16200.0,
+          24300.0,
+          33750.0,
+          -257871.6,
+          40500.0,
+          18900.0,
+          28350.0,
+          9450.0,
+          21600.0,
+          14850.0
+        ],
+        [
+          54000.0,
+          81000.0,
+          112500.0,
+          40500.0,
+          -765072.0,
+          63000.0,
+          94500.0,
+          31500.0,
+          72000.0,
+          49500.0
+        ],
+        [
+          25200.0,
+          37800.0,
+          52500.0,
+          18900.0,
+          63000.0,
+          -390632.4,
+          44100.0,
+          14700.0,
+          33600.0,
+          23100.0
+        ],
+        [
+          37800.0,
+          56700.0,
+          78750.0,
+          28350.0,
+          94500.0,
+          44100.0,
+          -563895.6,
+          22050.0,
+          50400.0,
+          34650.0
+        ],
+        [
+          12600.0,
+          18900.0,
+          26250.0,
+          9450.0,
+          31500.0,
+          14700.0,
+          22050.0,
+          -202665.6,
+          16800.0,
+          11550.0
+        ],
+        [
+          28800.0,
+          43200.0,
+          60000.0,
+          21600.0,
+          72000.0,
+          33600.0,
+          50400.0,
+          16800.0,
+          -441637.2,
+          26400.0
+        ],
+        [
+          19800.0,
+          29700.0,
+          41250.0,
+          14850.0,
+          49500.0,
+          23100.0,
+          34650.0,
+          11550.0,
+          26400.0,
+          -311874.0
+        ]
+      ],
+      "strategy": "domain-specific formulation citing Lucas (2014)",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5",
+        "x_6",
+        "x_7",
+        "x_8",
+        "x_9"
+      ]
+    },
+    "graph": {
+      "agent_name": "graph",
+      "estimated_qubits": 10,
+      "justification": "The graph strategy uses canonical graph structure when present and otherwise keeps a sparse graph-inspired QUBO without forcing a false graph model.",
+      "parameters_used": {
+        "detected_graph_problem": false
+      },
+      "q_matrix": [
+        [
+          -8.399999999999999,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -11.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -17.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          -6.3,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -21.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -9.45,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -13.299999999999999,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.55,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -10.85,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -7.0
+        ]
+      ],
+      "strategy": "graph canonical encoding",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5",
+        "x_6",
+        "x_7",
+        "x_8",
+        "x_9"
+      ]
+    },
+    "penalty": {
+      "agent_name": "penalty",
+      "estimated_qubits": 10,
+      "justification": "The penalty strategy uses lambda=120, twice the largest objective coefficient, to price feasibility above one-term objective gains.",
+      "parameters_used": {
+        "lambda": 120.0
+      },
+      "q_matrix": [
+        [
+          -270744.0,
+          25920.0,
+          36000.0,
+          12960.0,
+          43200.0,
+          20160.0,
+          30240.0,
+          10080.0,
+          23040.0,
+          15840.0
+        ],
+        [
+          25920.0,
+          -393152.0,
+          54000.0,
+          19440.0,
+          64800.0,
+          30240.0,
+          45360.0,
+          15120.0,
+          34560.0,
+          23760.0
+        ],
+        [
+          36000.0,
+          54000.0,
+          -525050.0,
+          27000.0,
+          90000.0,
+          42000.0,
+          63000.0,
+          21000.0,
+          48000.0,
+          33000.0
+        ],
+        [
+          12960.0,
+          19440.0,
+          27000.0,
+          -206298.0,
+          32400.0,
+          15120.0,
+          22680.0,
+          7560.0,
+          17280.0,
+          11880.0
+        ],
+        [
+          43200.0,
+          64800.0,
+          90000.0,
+          32400.0,
+          -612060.0,
+          50400.0,
+          75600.0,
+          25200.0,
+          57600.0,
+          39600.0
+        ],
+        [
+          20160.0,
+          30240.0,
+          42000.0,
+          15120.0,
+          50400.0,
+          -312507.0,
+          35280.0,
+          11760.0,
+          26880.0,
+          18480.0
+        ],
+        [
+          30240.0,
+          45360.0,
+          63000.0,
+          22680.0,
+          75600.0,
+          35280.0,
+          -451118.0,
+          17640.0,
+          40320.0,
+          27720.0
+        ],
+        [
+          10080.0,
+          15120.0,
+          21000.0,
+          7560.0,
+          25200.0,
+          11760.0,
+          17640.0,
+          -162133.0,
+          13440.0,
+          9240.0
+        ],
+        [
+          23040.0,
+          34560.0,
+          48000.0,
+          17280.0,
+          57600.0,
+          26880.0,
+          40320.0,
+          13440.0,
+          -353311.0,
+          21120.0
+        ],
+        [
+          15840.0,
+          23760.0,
+          33000.0,
+          11880.0,
+          39600.0,
+          18480.0,
+          27720.0,
+          9240.0,
+          21120.0,
+          -249500.0
+        ]
+      ],
+      "strategy": "penalty-based with lambda=120",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5",
+        "x_6",
+        "x_7",
+        "x_8",
+        "x_9"
+      ]
+    },
+    "slack": {
+      "agent_name": "slack",
+      "estimated_qubits": 19,
+      "justification": "The slack strategy adds 9 ancilla qubits for exact inequality encoding, trading search-space size for feasibility clarity.",
+      "parameters_used": {
+        "ancilla_qubits": 9,
+        "lambda": 180.0
+      },
+      "q_matrix": [
+        [
+          -406105.2,
+          38880.0,
+          54000.0,
+          19440.0,
+          64800.0,
+          30240.0,
+          45360.0,
+          15120.0,
+          34560.0,
+          23760.0,
+          2160.0,
+          4320.0,
+          8640.0,
+          17280.0,
+          34560.0,
+          69120.0,
+          138240.0,
+          276480.0,
+          552960.0
+        ],
+        [
+          38880.0,
+          -589713.6,
+          81000.0,
+          29160.0,
+          97200.0,
+          45360.0,
+          68040.0,
+          22680.0,
+          51840.0,
+          35640.0,
+          3240.0,
+          6480.0,
+          12960.0,
+          25920.0,
+          51840.0,
+          103680.0,
+          207360.0,
+          414720.0,
+          829440.0
+        ],
+        [
+          54000.0,
+          81000.0,
+          -787552.5,
+          40500.0,
+          135000.0,
+          63000.0,
+          94500.0,
+          31500.0,
+          72000.0,
+          49500.0,
+          4500.0,
+          9000.0,
+          18000.0,
+          36000.0,
+          72000.0,
+          144000.0,
+          288000.0,
+          576000.0,
+          1152000.0
+        ],
+        [
+          19440.0,
+          29160.0,
+          40500.0,
+          -309438.9,
+          48600.0,
+          22680.0,
+          34020.0,
+          11340.0,
+          25920.0,
+          17820.0,
+          1620.0,
+          3240.0,
+          6480.0,
+          12960.0,
+          25920.0,
+          51840.0,
+          103680.0,
+          207360.0,
+          414720.0
+        ],
+        [
+          64800.0,
+          97200.0,
+          135000.0,
+          48600.0,
+          -918063.0,
+          75600.0,
+          113400.0,
+          37800.0,
+          86400.0,
+          59400.0,
+          5400.0,
+          10800.0,
+          21600.0,
+          43200.0,
+          86400.0,
+          172800.0,
+          345600.0,
+          691200.0,
+          1382400.0
+        ],
+        [
+          30240.0,
+          45360.0,
+          63000.0,
+          22680.0,
+          75600.0,
+          -468748.35,
+          52920.0,
+          17640.0,
+          40320.0,
+          27720.0,
+          2520.0,
+          5040.0,
+          10080.0,
+          20160.0,
+          40320.0,
+          80640.0,
+          161280.0,
+          322560.0,
+          645120.0
+        ],
+        [
+          45360.0,
+          68040.0,
+          94500.0,
+          34020.0,
+          113400.0,
+          52920.0,
+          -676659.9,
+          26460.0,
+          60480.0,
+          41580.0,
+          3780.0,
+          7560.0,
+          15120.0,
+          30240.0,
+          60480.0,
+          120960.0,
+          241920.0,
+          483840.0,
+          967680.0
+        ],
+        [
+          15120.0,
+          22680.0,
+          31500.0,
+          11340.0,
+          37800.0,
+          17640.0,
+          26460.0,
+          -243193.65,
+          20160.0,
+          13860.0,
+          1260.0,
+          2520.0,
+          5040.0,
+          10080.0,
+          20160.0,
+          40320.0,
+          80640.0,
+          161280.0,
+          322560.0
+        ],
+        [
+          34560.0,
+          51840.0,
+          72000.0,
+          25920.0,
+          86400.0,
+          40320.0,
+          60480.0,
+          20160.0,
+          -529952.55,
+          31680.0,
+          2880.0,
+          5760.0,
+          11520.0,
+          23040.0,
+          46080.0,
+          92160.0,
+          184320.0,
+          368640.0,
+          737280.0
+        ],
+        [
+          23760.0,
+          35640.0,
+          49500.0,
+          17820.0,
+          59400.0,
+          27720.0,
+          41580.0,
+          13860.0,
+          31680.0,
+          -374241.0,
+          1980.0,
+          3960.0,
+          7920.0,
+          15840.0,
+          31680.0,
+          63360.0,
+          126720.0,
+          253440.0,
+          506880.0
+        ],
+        [
+          2160.0,
+          3240.0,
+          4500.0,
+          1620.0,
+          5400.0,
+          2520.0,
+          3780.0,
+          1260.0,
+          2880.0,
+          1980.0,
+          -35820.0,
+          360.0,
+          720.0,
+          1440.0,
+          2880.0,
+          5760.0,
+          11520.0,
+          23040.0,
+          46080.0
+        ],
+        [
+          4320.0,
+          6480.0,
+          9000.0,
+          3240.0,
+          10800.0,
+          5040.0,
+          7560.0,
+          2520.0,
+          5760.0,
+          3960.0,
+          360.0,
+          -71280.0,
+          1440.0,
+          2880.0,
+          5760.0,
+          11520.0,
+          23040.0,
+          46080.0,
+          92160.0
+        ],
+        [
+          8640.0,
+          12960.0,
+          18000.0,
+          6480.0,
+          21600.0,
+          10080.0,
+          15120.0,
+          5040.0,
+          11520.0,
+          7920.0,
+          720.0,
+          1440.0,
+          -141120.0,
+          5760.0,
+          11520.0,
+          23040.0,
+          46080.0,
+          92160.0,
+          184320.0
+        ],
+        [
+          17280.0,
+          25920.0,
+          36000.0,
+          12960.0,
+          43200.0,
+          20160.0,
+          30240.0,
+          10080.0,
+          23040.0,
+          15840.0,
+          1440.0,
+          2880.0,
+          5760.0,
+          -276480.0,
+          23040.0,
+          46080.0,
+          92160.0,
+          184320.0,
+          368640.0
+        ],
+        [
+          34560.0,
+          51840.0,
+          72000.0,
+          25920.0,
+          86400.0,
+          40320.0,
+          60480.0,
+          20160.0,
+          46080.0,
+          31680.0,
+          2880.0,
+          5760.0,
+          11520.0,
+          23040.0,
+          -529920.0,
+          92160.0,
+          184320.0,
+          368640.0,
+          737280.0
+        ],
+        [
+          69120.0,
+          103680.0,
+          144000.0,
+          51840.0,
+          172800.0,
+          80640.0,
+          120960.0,
+          40320.0,
+          92160.0,
+          63360.0,
+          5760.0,
+          11520.0,
+          23040.0,
+          46080.0,
+          92160.0,
+          -967680.0,
+          368640.0,
+          737280.0,
+          1474560.0
+        ],
+        [
+          138240.0,
+          207360.0,
+          288000.0,
+          103680.0,
+          345600.0,
+          161280.0,
+          241920.0,
+          80640.0,
+          184320.0,
+          126720.0,
+          11520.0,
+          23040.0,
+          46080.0,
+          92160.0,
+          184320.0,
+          368640.0,
+          -1566720.0,
+          1474560.0,
+          2949120.0
+        ],
+        [
+          276480.0,
+          414720.0,
+          576000.0,
+          207360.0,
+          691200.0,
+          322560.0,
+          483840.0,
+          161280.0,
+          368640.0,
+          253440.0,
+          23040.0,
+          46080.0,
+          92160.0,
+          184320.0,
+          368640.0,
+          737280.0,
+          1474560.0,
+          -1658880.0,
+          5898240.0
+        ],
+        [
+          552960.0,
+          829440.0,
+          1152000.0,
+          414720.0,
+          1382400.0,
+          645120.0,
+          967680.0,
+          322560.0,
+          737280.0,
+          506880.0,
+          46080.0,
+          92160.0,
+          184320.0,
+          368640.0,
+          737280.0,
+          1474560.0,
+          2949120.0,
+          5898240.0,
+          2580480.0
+        ]
+      ],
+      "strategy": "slack-variable exact encoding with 9 ancilla qubits",
+      "variable_order": [
+        "x_0",
+        "x_1",
+        "x_2",
+        "x_3",
+        "x_4",
+        "x_5",
+        "x_6",
+        "x_7",
+        "x_8",
+        "x_9",
+        "s_0_0",
+        "s_0_1",
+        "s_0_2",
+        "s_0_3",
+        "s_0_4",
+        "s_0_5",
+        "s_0_6",
+        "s_0_7",
+        "s_0_8"
+      ]
+    }
+  },
+  "refined_qubo": {
+    "agent_name": "graph",
+    "estimated_qubits": 10,
+    "expected_improvement": "No targeted improvement was applied because the winning QUBO was already near-optimal under the deterministic scorecard metrics.",
+    "improvements_made": [
+      "none \u2014 original was already near-optimal"
+    ],
+    "justification": "The graph strategy uses canonical graph structure when present and otherwise keeps a sparse graph-inspired QUBO without forcing a false graph model.",
+    "original_agent": "graph",
+    "parameters_used": {
+      "detected_graph_problem": false
+    },
+    "q_matrix": [
+      [
+        -8.399999999999999,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -11.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -17.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        -6.3,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -9.45,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -13.299999999999999,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -4.55,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -10.85,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -7.0
+      ]
+    ],
+    "strategy": "graph canonical encoding",
+    "variable_order": [
+      "x_0",
+      "x_1",
+      "x_2",
+      "x_3",
+      "x_4",
+      "x_5",
+      "x_6",
+      "x_7",
+      "x_8",
+      "x_9"
+    ]
+  },
+  "run_id": "cli-9b534ac974ea",
+  "scorecards": {
+    "decomp": {
+      "agent_name": "decomp",
+      "classical_baseline_objective": -281.15,
+      "classical_baseline_runtime_ms": 2.899083,
+      "composite_score": 7.264221,
+      "condition_number": 4.642857142857142,
+      "notes": "matrix is highly sparse",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 10,
+      "sparsity": 0.818182
+    },
+    "domain": {
+      "agent_name": "domain",
+      "classical_baseline_objective": -1500231.6,
+      "classical_baseline_runtime_ms": 2.795375,
+      "composite_score": 4.352556,
+      "condition_number": 9.864429196218927,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.2,
+      "qubit_count": 10,
+      "sparsity": 0.0
+    },
+    "graph": {
+      "agent_name": "graph",
+      "classical_baseline_objective": -109.55,
+      "classical_baseline_runtime_ms": 2.803792,
+      "composite_score": 7.514665,
+      "condition_number": 4.615384615384616,
+      "notes": "matrix is highly sparse",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 10,
+      "sparsity": 0.818182
+    },
+    "penalty": {
+      "agent_name": "penalty",
+      "classical_baseline_objective": -1200193.0,
+      "classical_baseline_runtime_ms": 2.796583,
+      "composite_score": 4.35264,
+      "condition_number": 9.864301289545294,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.2,
+      "qubit_count": 10,
+      "sparsity": 0.0
+    },
+    "slack": {
+      "agent_name": "slack",
+      "classical_baseline_objective": -1800026.85,
+      "classical_baseline_runtime_ms": 15.5415,
+      "composite_score": 3.493327,
+      "condition_number": 254.57482452494608,
+      "notes": "metrics are within expected ranges",
+      "penalty_sensitivity": 0.0,
+      "qubit_count": 19,
+      "sparsity": 0.0
+    }
+  },
+  "sim_result": {
+    "best_bitstring": "1111111011",
+    "best_objective": -105.0,
+    "quality_vs_classical": 95.846645,
+    "runtime_ms": 217.20537499641068,
+    "top_5_bitstrings": [
+      [
+        "1111111011",
+        5,
+        -105.0
+      ],
+      [
+        "1110111111",
+        2,
+        -103.25
+      ],
+      [
+        "0111111111",
+        7,
+        -101.15
+      ],
+      [
+        "1111101111",
+        5,
+        -100.1
+      ],
+      [
+        "1111111101",
+        3,
+        -98.7
+      ]
+    ],
+    "total_shots": 1024
+  },
+  "template_metadata": {
+    "constraint_count": 1,
+    "description": "Select the highest-value item subset within a capacity limit.",
+    "difficulty": "medium",
+    "display_name": "Knapsack",
+    "domain_tags": [
+      "selection",
+      "capacity",
+      "integer-programming"
+    ],
+    "expected_optimal_value": 196.0,
+    "name": "knapsack",
+    "variable_count": 10
+  },
+  "wall_clock_ms": 567.945
+}

@@ -393,9 +393,20 @@ def _route_after_critic(state: PipelineState) -> str:
 
 
 def _build_graph(event_callback: EventCallback | None) -> Any:
-    factories = _default_agent_factories()
-    critic_factory = _default_critic_factory()
-    refiner_factory = _default_refiner_factory()
+    return _compile_graph(
+        event_callback=event_callback,
+        factories=_default_agent_factories(),
+        critic_factory=_default_critic_factory(),
+        refiner_factory=_default_refiner_factory(),
+    )
+
+
+def _compile_graph(
+    event_callback: EventCallback | None,
+    factories: dict[str, AgentFactory],
+    critic_factory: CriticFactory,
+    refiner_factory: RefinerFactory,
+) -> Any:
     graph = StateGraph(PipelineState)
 
     for agent_name in AGENT_NAMES:
@@ -454,11 +465,22 @@ async def run_pipeline(
     ir: ProblemIR,
     run_id: str,
     event_callback: EventCallback | None = None,
+    agent_factories: dict[str, AgentFactory] | None = None,
+    critic_factory: CriticFactory | None = None,
+    refiner_factory: RefinerFactory | None = None,
 ) -> PipelineState:
     """Run the full LangGraph QUBO pipeline."""
 
     initial_state = _initial_state(ir, run_id)
-    app = _build_graph(event_callback)
+    if agent_factories is None and critic_factory is None and refiner_factory is None:
+        app = _build_graph(event_callback)
+    else:
+        app = _compile_graph(
+            event_callback=event_callback,
+            factories=agent_factories or _default_agent_factories(),
+            critic_factory=critic_factory or _default_critic_factory(),
+            refiner_factory=refiner_factory or _default_refiner_factory(),
+        )
     try:
         result = await asyncio.wait_for(
             app.ainvoke(initial_state),
