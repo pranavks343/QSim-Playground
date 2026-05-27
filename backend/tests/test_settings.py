@@ -26,3 +26,18 @@ def test_settings_parses_comma_separated_environment_values() -> None:
 def test_settings_rejects_missing_required_values() -> None:
     with pytest.raises(ValidationError, match="value must include at least one entry"):
         Settings()
+
+
+def test_settings_rejects_supabase_placeholders() -> None:
+    with pytest.raises(ValidationError, match="placeholder"):
+        Settings.model_validate(
+            {
+                "GEMINI_API_KEYS": "key-1",
+                "SUPABASE_URL": "https://xxxxx.supabase.co",
+                "SUPABASE_ANON_KEY": "eyJh...",
+                "SUPABASE_SERVICE_ROLE_KEY": "eyJh...",
+                "SUPABASE_JWT_SECRET": "changeme",
+                "SENTRY_DSN": "https://sentry.example/1",
+                "ALLOWED_ORIGINS": "http://localhost:3000",
+            }
+        )

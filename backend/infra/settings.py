@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     """Runtime configuration for trusted backend processes."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=("backend/.env", ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=True,
@@ -57,6 +57,31 @@ class Settings(BaseSettings):
 
         if not value.strip():
             raise ValueError("value must be set")
+        return value
+
+    @field_validator(
+        "supabase_url",
+        "supabase_anon_key",
+        "supabase_service_role_key",
+        "supabase_jwt_secret",
+    )
+    @classmethod
+    def reject_placeholder_supabase_values(cls, value: str) -> str:
+        """Reject common copied placeholders so misconfigured deploys fail loudly."""
+
+        normalized = value.strip().lower()
+        placeholder_fragments = (
+            "...",
+            "xxxxx",
+            "placeholder",
+            "changeme",
+            "change-me",
+            "your-",
+            "<",
+            ">",
+        )
+        if any(fragment in normalized for fragment in placeholder_fragments):
+            raise ValueError("Supabase setting appears to be a placeholder")
         return value
 
 

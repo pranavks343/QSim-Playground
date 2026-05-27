@@ -1,5 +1,5 @@
 # Current Work
 
-Day 2 complete.
+Day 3, Block A in progress.
 
-Next: Day 3, Block A: Supabase project setup.
+Current: Supabase project setup and backend client wiring.
