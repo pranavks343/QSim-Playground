@@ -12,7 +12,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: bash -c 'cd backend && mypy core api infra cli scripts tests'
+        entry: bash -c 'cd backend && { [ -x .venv/bin/mypy ] && MYPY=.venv/bin/mypy || MYPY=mypy; } && "$MYPY" core api infra cli scripts tests'
         language: system
         pass_filenames: false
         files: ^backend/

@@ -35,6 +35,7 @@ create table if not exists public.runs (
     classical_result jsonb,
     error text,
     total_runtime_ms int,
+    cancel_requested boolean not null default false,
     created_at timestamptz not null default now(),
     completed_at timestamptz,
     deleted_at timestamptz
@@ -110,7 +111,7 @@ grant update (display_name) on table public.users_profile to authenticated;
 
 grant select on table public.runs to authenticated;
 grant insert (user_id, template, input_source, problem_ir) on table public.runs to authenticated;
-grant update (deleted_at) on table public.runs to authenticated;
+grant update (deleted_at, cancel_requested) on table public.runs to authenticated;
 
 grant select on table public.run_events to authenticated;
 grant select on table public.exports to authenticated;

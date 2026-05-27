@@ -6,7 +6,10 @@ QSim Playground is a multi-agent quantum optimization sandbox for ML engineers.
 
 ## Status
 
-Day 2 agent pipeline work is complete.
+Day 3 backend is complete: FastAPI service, Supabase auth and RLS, background
+pipeline execution, tiered quotas, rate limiting, qubit caps, Gemini circuit
+breaker, and multi-user concurrency verification. Day 4 starts the Next.js
+frontend.
 
 ## Quickstart
 
@@ -15,6 +18,110 @@ cd backend
 python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
+
+## Local development
+
+```bash
+# 1. Clone and enter the repo
+git clone https://github.com/pranavks343/QSim-Playground.git
+cd QSim-Playground
+
+# 2. Create a Python 3.11 virtualenv and install backend deps
+python3.11 -m venv backend/.venv
+source backend/.venv/bin/activate
+python -m pip install -r backend/requirements.txt
+python -m pip install -e backend
+
+# 3. Copy the env template and fill in Supabase + Gemini values
+cp .env.example backend/.env
+$EDITOR backend/.env   # SUPABASE_URL, SUPABASE_ANON_KEY,
+                       # SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET,
+                       # GEMINI_API_KEYS, ALLOWED_ORIGINS
+
+# 4. Apply the database schema in Supabase
+#    Paste backend/infra/migrations/001_initial_schema.sql into the SQL editor.
+#    See docs/OPERATIONS.md for the full setup checklist.
+
+# 5. Run the API locally
+cd backend
+uvicorn api.main:app --reload --port 8000
+
+# 6. Run the test suite
+python -m pytest
+```
+
+The CLI also runs the full pipeline locally without the API:
+
+```bash
+qsim run --template portfolio
+```
+
+### Example: create a run via the HTTP API
+
+Obtain a Supabase JWT for a signed-in user (Supabase dashboard or
+`supabase.auth.signInWithPassword` from any client) and call:
+
+```bash
+curl -X POST http://localhost:8000/api/runs \
+     -H "Authorization: Bearer $SUPABASE_JWT" \
+     -H "Content-Type: application/json" \
+     -d '{"input_source": "template", "template_name": "portfolio"}'
+```
+
+Response (HTTP 201):
+
+```json
+{"run_id": "7c4f…", "status": "queued"}
+```
+
+Then poll for results and stream events:
+
+```bash
+curl -H "Authorization: Bearer $SUPABASE_JWT" \
+     http://localhost:8000/api/runs/$RUN_ID
+
+curl -H "Authorization: Bearer $SUPABASE_JWT" \
+     http://localhost:8000/api/runs/$RUN_ID/events
+```
+
+Cancel an in-flight run:
+
+```bash
+curl -X POST -H "Authorization: Bearer $SUPABASE_JWT" \
+     http://localhost:8000/api/runs/$RUN_ID/cancel
+```
+
+### Request flow
+
+```
++----------+   POST /api/runs    +---------------+    insert    +--------+
+|  Client  | ------------------> |  FastAPI app  | -----------> | Supabase |
++----------+                     |  (auth, RLS,  |              |   runs   |
+     ^                           |   quotas,     |              +----+-----+
+     |                           |   rate limit, |                   |
+     |   201 + run_id            |   breaker)    |                   |
+     +-------------------------- +---+-----------+                   |
+                                     |  background_tasks.add_task    |
+                                     v                               |
+                              +------+------+   evaluator + circuit  |
+                              | execute_    | <----+   simulator    |
+                              | pipeline_   |      |                |
+                              | background  |      | cancel_check + |
+                              | (semaphore) |      | max_qubits cap |
+                              +------+------+                       |
+                                     | LangGraph nodes              |
+                                     v                              v
+                              +------+------+   events    +---------+--------+
+                              |  Gemini     | ----------> |  Supabase        |
+                              |  agents x 5 |             |  run_events      |
+                              |  + critic   |             |  (realtime sub)  |
+                              |  + refiner  |             +------------------+
+                              +-------------+
+```
+
+`docs/ARCHITECTURE.md` has the same flow as a mermaid diagram plus a
+detailed walkthrough of the execution model, multi-user isolation, and
+how the per-tier limits compose.
 
 List the built-in templates:
 

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import random
+import threading
 import time
+from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar, cast
@@ -20,12 +22,67 @@ SleepFn = Callable[[float], Awaitable[None]]
 ClockFn = Callable[[], float]
 
 
+GEMINI_BREAKER_THRESHOLD = 10
+GEMINI_BREAKER_WINDOW_SECONDS = 60.0
+GEMINI_BREAKER_COOLDOWN_SECONDS = 30.0
+
+_breaker_lock = threading.Lock()
+_breaker_recent_429s: deque[float] = deque()
+_breaker_open_until: float = 0.0
+
+
 class GeminiQuotaExhausted(RuntimeError):
     """Raised when every configured Gemini key is cooling down."""
 
 
 class GeminiTransportError(RuntimeError):
     """Raised when the Gemini transport returns a non-retryable error."""
+
+
+class GeminiCircuitOpen(RuntimeError):
+    """Raised when the module-level Gemini circuit breaker is open."""
+
+    def __init__(self, retry_after: float) -> None:
+        self.retry_after = max(1.0, retry_after)
+        super().__init__(f"Gemini circuit breaker open; retry in ~{int(self.retry_after)}s")
+
+
+def is_gemini_circuit_open(clock: ClockFn = time.monotonic) -> tuple[bool, float]:
+    """Return ``(open, seconds_remaining)`` for the module-level breaker."""
+
+    with _breaker_lock:
+        now = clock()
+        remaining = _breaker_open_until - now
+        return remaining > 0.0, max(0.0, remaining)
+
+
+def reset_gemini_circuit_breaker() -> None:
+    """Clear breaker state. Test helper; do not call from production code."""
+
+    global _breaker_open_until
+    with _breaker_lock:
+        _breaker_recent_429s.clear()
+        _breaker_open_until = 0.0
+
+
+def _record_gemini_429(clock: ClockFn) -> None:
+    """Append a 429 timestamp and open the breaker if the threshold trips."""
+
+    global _breaker_open_until
+    with _breaker_lock:
+        now = clock()
+        _breaker_recent_429s.append(now)
+        cutoff = now - GEMINI_BREAKER_WINDOW_SECONDS
+        while _breaker_recent_429s and _breaker_recent_429s[0] < cutoff:
+            _breaker_recent_429s.popleft()
+        if len(_breaker_recent_429s) > GEMINI_BREAKER_THRESHOLD:
+            _breaker_open_until = now + GEMINI_BREAKER_COOLDOWN_SECONDS
+
+
+def _raise_if_circuit_open(clock: ClockFn) -> None:
+    open_, remaining = is_gemini_circuit_open(clock)
+    if open_:
+        raise GeminiCircuitOpen(retry_after=remaining)
 
 
 @dataclass(frozen=True)
@@ -170,8 +227,10 @@ class GeminiClient:
         temperature: float,
         response_mime_type: str | None,
     ) -> GeminiResponse:
+        _raise_if_circuit_open(self._clock)
         transient_attempts = 0
         while True:
+            _raise_if_circuit_open(self._clock)
             key_index, api_key = await self._next_key()
             started_at = self._clock()
             try:
@@ -186,6 +245,7 @@ class GeminiClient:
             except Exception as exc:
                 latency_ms = round((self._clock() - started_at) * 1000, 3)
                 if self._is_quota_error(exc):
+                    _record_gemini_429(self._clock)
                     await self._mark_cooling_down(key_index)
                     logger.warning(
                         "gemini_call",

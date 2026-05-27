@@ -201,8 +201,20 @@ def client(
             quota_remaining=47,
         )
 
+    async def noop_execute_pipeline_background(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+
+    async def noop_check_quota(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+
+    async def noop_check_rate_limit(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+
     app.dependency_overrides[get_current_user] = fake_current_user
     monkeypatch.setattr(run_routes, "_client_for_request", lambda _request: fake_db)
+    monkeypatch.setattr(run_routes, "execute_pipeline_background", noop_execute_pipeline_background)
+    monkeypatch.setattr(run_routes, "check_quota", noop_check_quota)
+    monkeypatch.setattr(run_routes, "check_rate_limit", noop_check_rate_limit)
     monkeypatch.setattr(profile_routes, "get_user_client", lambda _bearer_jwt: fake_db)
     with TestClient(app) as test_client:
         yield test_client

@@ -8,6 +8,7 @@ from qiskit.circuit.library import QAOAAnsatz
 from qiskit.quantum_info import SparsePauliOp
 
 from core.agents.base import QUBOOutput
+from core.limits import enforce_qubit_cap
 
 
 class CircuitData(BaseModel):
@@ -23,9 +24,14 @@ class CircuitData(BaseModel):
     circuit_image_svg: str | None = None
 
 
-def build_qaoa_circuit(qubo: QUBOOutput, reps: int = 2) -> tuple[CircuitData, QuantumCircuit]:
+def build_qaoa_circuit(
+    qubo: QUBOOutput,
+    reps: int = 2,
+    max_qubits: int | None = None,
+) -> tuple[CircuitData, QuantumCircuit]:
     """Build a QAOA ansatz circuit from a QUBO matrix."""
 
+    enforce_qubit_cap(len(qubo.variable_order), max_qubits, source="circuit_gen")
     cost_operator = qubo_to_sparse_pauli_op(qubo)
     ansatz = QAOAAnsatz(cost_operator=cost_operator, reps=reps)
     circuit = transpile(
