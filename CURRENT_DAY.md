@@ -1,5 +1,5 @@
 # Current Work
 
-Day 3, Block B ready for Supabase apply.
+Day 3, Block C in progress.
 
-Current: Apply `backend/infra/migrations/001_initial_schema.sql` in Supabase and run RLS tests with real credentials.
+Current: FastAPI app skeleton, auth middleware, request tracing, and health endpoint.

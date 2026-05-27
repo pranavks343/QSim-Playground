@@ -17,6 +17,7 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=True,
         validate_default=True,
+        enable_decoding=False,
     )
 
     gemini_api_keys: list[str] = Field(default_factory=list, alias="GEMINI_API_KEYS")
@@ -49,7 +50,6 @@ class Settings(BaseSettings):
         "supabase_anon_key",
         "supabase_service_role_key",
         "supabase_jwt_secret",
-        "sentry_dsn",
     )
     @classmethod
     def require_non_empty(cls, value: str) -> str:

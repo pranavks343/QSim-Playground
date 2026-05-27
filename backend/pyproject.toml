@@ -25,13 +25,15 @@ dependencies = [
     "python-dotenv==1.0.1",
     "typer==0.15.1",
     "structlog==24.4.0",
+    "PyJWT==2.13.0",
+    "sentry-sdk==2.19.2",
 ]
 
 [project.scripts]
 qsim = "cli.main:app"
 
 [tool.setuptools]
-packages = ["api", "cli", "core", "core.agents", "infra"]
+packages = ["api", "api.routes", "cli", "core", "core.agents", "infra"]
 
 [tool.setuptools.package-data]
 "core.agents" = ["prompts/*.md"]
