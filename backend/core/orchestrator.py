@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, TypedDict, TypeVar, cast
 
+import structlog
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 from qiskit import QuantumCircuit
@@ -27,6 +29,7 @@ from core.evaluator import (
     evaluate_qubo,
 )
 from core.ir import ProblemIR
+from core.limits import QubitCapExceeded
 from core.runner import ClassicalResult, SimulationResult, run_classical_baseline, simulate_circuit
 from core.templates import TemplateMetadata, list_templates
 from infra.gemini import GeminiClient
@@ -44,18 +47,52 @@ EventType = Literal[
     "simulation_done",
     "pipeline_done",
     "pipeline_failed",
+    "pipeline_cancelled",
 ]
 EventCallback = Callable[["PipelineEvent"], Awaitable[None]]
+CancelCheck = Callable[[], Awaitable[bool]]
 AgentFactory = Callable[[], QUBOAgent]
 CriticFactory = Callable[[], CriticAgent]
 RefinerFactory = Callable[[], RefinerAgent]
 PipelineUpdate = dict[str, Any]
 
+
+class PipelineCancelled(Exception):
+    """Raised when cancel_check signals that the run should stop."""
+
+
 MIN_SUCCESSFUL_AGENTS = 3
 LOW_SCORE_THRESHOLD = 5.0
 PIPELINE_TIMEOUT_SECONDS = 120.0
+NODE_SLOW_WARNING_SECONDS = 30.0
 AGENT_NAMES = ["penalty", "slack", "graph", "decomp", "domain"]
 T = TypeVar("T")
+
+logger = structlog.get_logger(__name__)
+
+
+def _instrument_node(
+    node_name: str,
+    fn: Callable[[PipelineState], Awaitable[PipelineUpdate]],
+) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
+    """Wrap a node coroutine with wall-clock timing and a slow-node warning."""
+
+    async def wrapped(state: PipelineState) -> PipelineUpdate:
+        started = time.perf_counter()
+        try:
+            return await fn(state)
+        finally:
+            elapsed = time.perf_counter() - started
+            if elapsed > NODE_SLOW_WARNING_SECONDS:
+                logger.warning(
+                    "orchestrator_node_slow",
+                    node=node_name,
+                    elapsed_seconds=round(elapsed, 3),
+                    run_id=state.get("run_id"),
+                    threshold_seconds=NODE_SLOW_WARNING_SECONDS,
+                )
+
+    return wrapped
 
 
 class PipelineEvent(BaseModel):
@@ -109,6 +146,7 @@ class PipelineState(TypedDict, total=False):
     events: Annotated[list[PipelineEvent], _append_list]
     errors: Annotated[list[PipelineError], _append_list]
     pipeline_failed: bool
+    cancelled: bool
     critic_retry_count: int
 
 
@@ -171,12 +209,19 @@ def _default_refiner_factory() -> RefinerFactory:
     return lambda: RefinerAgent(client)
 
 
+async def _check_cancelled(cancel_check: CancelCheck | None) -> None:
+    if cancel_check is not None and await cancel_check():
+        raise PipelineCancelled()
+
+
 def _build_agent_node(
     agent_name: str,
     factory: AgentFactory,
     event_callback: EventCallback | None,
+    cancel_check: CancelCheck | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def agent_node(state: PipelineState) -> PipelineUpdate:
+        await _check_cancelled(cancel_check)
         started = await _emit(state, "agent_started", {"agent_name": agent_name}, event_callback)
         context = AgentContext(
             ir=state["ir"],
@@ -210,8 +255,11 @@ def _build_agent_node(
 
 def _build_evaluator_node(
     event_callback: EventCallback | None,
+    cancel_check: CancelCheck | None,
+    max_qubits: int | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def evaluator_node(state: PipelineState) -> PipelineUpdate:
+        await _check_cancelled(cancel_check)
         qubos = state.get("qubos", {})
         if len(qubos) < MIN_SUCCESSFUL_AGENTS:
             failed = await _emit(
@@ -244,6 +292,7 @@ def _build_evaluator_node(
                 output,
                 state["ir"],
                 state.get("template_metadata"),
+                max_qubits=max_qubits,
             )
             scorecards[agent_name] = scorecard
             events.append(
@@ -275,8 +324,10 @@ def _build_evaluator_node(
 def _build_critic_node(
     event_callback: EventCallback | None,
     critic_factory: CriticFactory,
+    cancel_check: CancelCheck | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def critic_node(state: PipelineState) -> PipelineUpdate:
+        await _check_cancelled(cancel_check)
         verdict = await critic_factory().judge(state["comparison_table"])
         event = await _emit(
             state,
@@ -293,8 +344,10 @@ def _build_refiner_node(
     event_callback: EventCallback | None,
     refiner_factory: RefinerFactory,
     with_hints: bool,
+    cancel_check: CancelCheck | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def refiner_node(state: PipelineState) -> PipelineUpdate:
+        await _check_cancelled(cancel_check)
         winner_name = state["critic_verdict"].winner_agent
         refined = await refiner_factory().refine(
             state["qubos"][winner_name],
@@ -318,10 +371,13 @@ def _build_refiner_node(
 
 def _build_circuit_node(
     event_callback: EventCallback | None,
+    cancel_check: CancelCheck | None,
+    max_qubits: int | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def circuit_node(state: PipelineState) -> PipelineUpdate:
+        await _check_cancelled(cancel_check)
         refined = state["refined_qubo"]
-        circuit_data, circuit = build_qaoa_circuit(refined)
+        circuit_data, circuit = build_qaoa_circuit(refined, max_qubits=max_qubits)
         event = await _emit(
             state,
             "circuit_ready",
@@ -339,8 +395,10 @@ def _build_circuit_node(
 
 def _build_runner_node(
     event_callback: EventCallback | None,
+    cancel_check: CancelCheck | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def runner_node(state: PipelineState) -> PipelineUpdate:
+        await _check_cancelled(cancel_check)
         classical_result = run_classical_baseline(state["refined_qubo"], state["ir"])
         sim_result = simulate_circuit(
             state["qaoa_circuit"],
@@ -392,12 +450,18 @@ def _route_after_critic(state: PipelineState) -> str:
     return "continue"
 
 
-def _build_graph(event_callback: EventCallback | None) -> Any:
+def _build_graph(
+    event_callback: EventCallback | None,
+    cancel_check: CancelCheck | None,
+    max_qubits: int | None,
+) -> Any:
     return _compile_graph(
         event_callback=event_callback,
         factories=_default_agent_factories(),
         critic_factory=_default_critic_factory(),
         refiner_factory=_default_refiner_factory(),
+        cancel_check=cancel_check,
+        max_qubits=max_qubits,
     )
 
 
@@ -406,25 +470,59 @@ def _compile_graph(
     factories: dict[str, AgentFactory],
     critic_factory: CriticFactory,
     refiner_factory: RefinerFactory,
+    cancel_check: CancelCheck | None = None,
+    max_qubits: int | None = None,
 ) -> Any:
     graph = StateGraph(PipelineState)
 
     for agent_name in AGENT_NAMES:
         graph.add_node(
-            agent_name, _build_agent_node(agent_name, factories[agent_name], event_callback)
+            agent_name,
+            _instrument_node(
+                agent_name,
+                _build_agent_node(agent_name, factories[agent_name], event_callback, cancel_check),
+            ),
         )
 
-    graph.add_node("evaluator", _build_evaluator_node(event_callback))
-    graph.add_node("critic", _build_critic_node(event_callback, critic_factory))
     graph.add_node(
-        "refiner", _build_refiner_node(event_callback, refiner_factory, with_hints=False)
+        "evaluator",
+        _instrument_node(
+            "evaluator", _build_evaluator_node(event_callback, cancel_check, max_qubits)
+        ),
+    )
+    graph.add_node(
+        "critic",
+        _instrument_node(
+            "critic", _build_critic_node(event_callback, critic_factory, cancel_check)
+        ),
+    )
+    graph.add_node(
+        "refiner",
+        _instrument_node(
+            "refiner",
+            _build_refiner_node(
+                event_callback, refiner_factory, with_hints=False, cancel_check=cancel_check
+            ),
+        ),
     )
     graph.add_node(
         "refiner_with_hints",
-        _build_refiner_node(event_callback, refiner_factory, with_hints=True),
+        _instrument_node(
+            "refiner_with_hints",
+            _build_refiner_node(
+                event_callback, refiner_factory, with_hints=True, cancel_check=cancel_check
+            ),
+        ),
     )
-    graph.add_node("circuit_gen", _build_circuit_node(event_callback))
-    graph.add_node("runner", _build_runner_node(event_callback))
+    graph.add_node(
+        "circuit_gen",
+        _instrument_node(
+            "circuit_gen", _build_circuit_node(event_callback, cancel_check, max_qubits)
+        ),
+    )
+    graph.add_node(
+        "runner", _instrument_node("runner", _build_runner_node(event_callback, cancel_check))
+    )
 
     for agent_name in AGENT_NAMES:
         graph.add_edge(START, agent_name)
@@ -468,18 +566,22 @@ async def run_pipeline(
     agent_factories: dict[str, AgentFactory] | None = None,
     critic_factory: CriticFactory | None = None,
     refiner_factory: RefinerFactory | None = None,
+    cancel_check: CancelCheck | None = None,
+    max_qubits: int | None = None,
 ) -> PipelineState:
     """Run the full LangGraph QUBO pipeline."""
 
     initial_state = _initial_state(ir, run_id)
     if agent_factories is None and critic_factory is None and refiner_factory is None:
-        app = _build_graph(event_callback)
+        app = _build_graph(event_callback, cancel_check, max_qubits)
     else:
         app = _compile_graph(
             event_callback=event_callback,
             factories=agent_factories or _default_agent_factories(),
             critic_factory=critic_factory or _default_critic_factory(),
             refiner_factory=refiner_factory or _default_refiner_factory(),
+            cancel_check=cancel_check,
+            max_qubits=max_qubits,
         )
     try:
         result = await asyncio.wait_for(
@@ -497,6 +599,55 @@ async def run_pipeline(
                 node="pipeline",
                 message="pipeline timed out",
                 error_type="TimeoutError",
+                timestamp=_now(),
+                run_id=run_id,
+            ),
+        ]
+        initial_state["pipeline_failed"] = True
+        return initial_state
+    except PipelineCancelled:
+        event = _event(run_id, "pipeline_cancelled", {"reason": "cancelled by user"})
+        if event_callback is not None:
+            await event_callback(event)
+        initial_state["events"] = [*initial_state["events"], event]
+        initial_state["errors"] = [
+            *initial_state["errors"],
+            PipelineError(
+                node="pipeline",
+                message="cancelled by user",
+                error_type="PipelineCancelled",
+                timestamp=_now(),
+                run_id=run_id,
+            ),
+        ]
+        initial_state["pipeline_failed"] = True
+        initial_state["cancelled"] = True
+        return initial_state
+    except QubitCapExceeded as exc:
+        message = (
+            f"Pipeline halted: {exc.source} produced {exc.qubit_count} qubits "
+            f"which exceeds the tier cap of {exc.limit}."
+        )
+        event = _event(
+            run_id,
+            "pipeline_failed",
+            {
+                "reason": "qubit_cap_exceeded",
+                "qubit_count": exc.qubit_count,
+                "limit": exc.limit,
+                "source": exc.source,
+                "message": message,
+            },
+        )
+        if event_callback is not None:
+            await event_callback(event)
+        initial_state["events"] = [*initial_state["events"], event]
+        initial_state["errors"] = [
+            *initial_state["errors"],
+            PipelineError(
+                node=exc.source,
+                message=message,
+                error_type="QubitCapExceeded",
                 timestamp=_now(),
                 run_id=run_id,
             ),

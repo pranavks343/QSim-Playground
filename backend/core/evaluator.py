@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from core.agents.base import QUBOOutput
 from core.ir import ProblemIR
+from core.limits import enforce_qubit_cap
 from core.templates import TemplateMetadata
 
 ZERO_TOLERANCE = 1e-12
@@ -131,6 +132,7 @@ def evaluate_qubo(
     qubo: QUBOOutput,
     ir: ProblemIR,
     template_metadata: TemplateMetadata | None,
+    max_qubits: int | None = None,
 ) -> Scorecard:
     """Evaluate a QUBO with six deterministic metrics.
 
@@ -147,6 +149,7 @@ def evaluate_qubo(
 
     q = qubo_to_array(qubo)
     qubit_count = len(qubo.variable_order)
+    enforce_qubit_cap(qubit_count, max_qubits, source=f"evaluator:{qubo.agent_name}")
     sparsity = compute_sparsity(q)
     condition_number = compute_condition_number(q)
     penalty_sensitivity = compute_penalty_sensitivity(qubo, ir)

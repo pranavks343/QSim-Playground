@@ -71,6 +71,7 @@ class RunResponse(BaseModel):
     classical_result: dict[str, Any] | None = None
     error: str | None = None
     total_runtime_ms: int | None = None
+    cancel_requested: bool = False
     created_at: str
     completed_at: str | None = None
     deleted_at: str | None = None

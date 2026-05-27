@@ -11,6 +11,8 @@ from pydantic import ValidationError
 from starlette import status
 
 from api.deps import AuthenticatedUser, get_current_user
+from api.execution import execute_pipeline_background
+from api.limits import check_quota, check_rate_limit, tier_limits
 from api.schemas import (
     CreateRunRequest,
     CreateRunResponse,
@@ -24,13 +26,14 @@ from api.schemas import (
 from core.ir import ProblemIR
 from core.parser import ParseFailure, ParseSuccess, parse
 from core.templates import get_template
+from infra.gemini import is_gemini_circuit_open
 from infra.supabase import get_user_client
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
 
 @router.post("", response_model=CreateRunResponse, status_code=status.HTTP_201_CREATED)
-def create_run(
+async def create_run(
     payload: CreateRunRequest,
     background_tasks: BackgroundTasks,
     request: Request,
@@ -38,8 +41,9 @@ def create_run(
 ) -> CreateRunResponse:
     """Create a queued run from template, code, or IR."""
 
-    _check_quota(current_user)
-    _check_rate_limit(current_user)
+    _raise_if_gemini_circuit_open()
+    await check_quota(current_user)
+    await check_rate_limit(current_user)
     problem_ir = _resolve_ir(payload)
     client = _client_for_request(request)
     response = (
@@ -56,7 +60,13 @@ def create_run(
         .execute()
     )
     row = _single_row(response.data)
-    background_tasks.add_task(_queued_run_placeholder, str(row["id"]))
+    background_tasks.add_task(
+        execute_pipeline_background,
+        UUID(str(row["id"])),
+        current_user.id,
+        problem_ir,
+        tier_limits(current_user.tier)["max_qubits"],
+    )
     return CreateRunResponse(run_id=UUID(str(row["id"])), status="queued")
 
 
@@ -148,6 +158,35 @@ def delete_run(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.post("/{run_id}/cancel", status_code=status.HTTP_202_ACCEPTED)
+def cancel_run(
+    run_id: UUID,
+    request: Request,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+) -> dict[str, Any]:
+    """Request cancellation for an in-flight run.
+
+    Sets ``cancel_requested=true`` on the run row. The background executor
+    polls this flag between major pipeline nodes and finalises the run with
+    ``status='cancelled'`` when it sees the flag.
+    """
+
+    del current_user
+    row = _fetch_owned_run(request, run_id)
+    if row.get("status") in {"done", "failed", "timeout", "cancelled"}:
+        return {"run_id": str(run_id), "status": row.get("status"), "cancel_requested": False}
+    response = (
+        _client_for_request(request)
+        .table("runs")
+        .update({"cancel_requested": True})
+        .eq("id", str(run_id))
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+    return {"run_id": str(run_id), "status": row.get("status"), "cancel_requested": True}
+
+
 @router.post(
     "/{run_id}/export",
     response_model=ExportNotImplementedResponse,
@@ -232,13 +271,15 @@ def _run_response(row: dict[str, Any]) -> RunResponse:
     return RunResponse.model_validate(row)
 
 
-def _check_quota(current_user: AuthenticatedUser) -> None:
-    del current_user
-
-
-def _check_rate_limit(current_user: AuthenticatedUser) -> None:
-    del current_user
-
-
-def _queued_run_placeholder(run_id: str) -> None:
-    del run_id
+def _raise_if_gemini_circuit_open() -> None:
+    open_, remaining = is_gemini_circuit_open()
+    if open_:
+        retry_after = max(1, int(remaining))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": "service_busy",
+                "message": "System busy, please retry in 30s",
+            },
+            headers={"Retry-After": str(retry_after)},
+        )

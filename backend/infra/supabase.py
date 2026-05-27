@@ -51,8 +51,11 @@ def get_user_client(access_token: str) -> Client:
 def _called_from_request_handler() -> bool:
     """Best-effort guard for accidental service-role use inside API route modules."""
 
+    allowed_files = {"execution.py"}
     for frame in inspect.stack(context=0):
         path = Path(frame.filename)
+        if path.name in allowed_files:
+            return False
         if "api" in path.parts and frame.function not in {
             "get_service_client",
             "_called_from_request_handler",

@@ -136,7 +136,12 @@ def _patch_agent_factories(
     monkeypatch.setattr("core.orchestrator.run_classical_baseline", _fake_classical_baseline)
 
 
-def _fake_build_qaoa_circuit(qubo: QUBOOutput) -> tuple[CircuitData, QuantumCircuit]:
+def _fake_build_qaoa_circuit(
+    qubo: QUBOOutput,
+    reps: int = 2,
+    max_qubits: int | None = None,
+) -> tuple[CircuitData, QuantumCircuit]:
+    del reps, max_qubits
     circuit = QuantumCircuit(len(qubo.variable_order))
     circuit.h(range(len(qubo.variable_order)))
     return (
