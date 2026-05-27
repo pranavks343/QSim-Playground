@@ -36,7 +36,7 @@ def test_load_unknown_template_exits_one() -> None:
 
 
 def test_parse_fixture_file_succeeds() -> None:
-    result = RUNNER.invoke(app, ["parse", "--file", str(FIXTURE_DIR / "portfolio_numpy.py")])
+    result = RUNNER.invoke(app, ["parse", "--file", str(FIXTURE_DIR / "portfolio.py")])
 
     assert result.exit_code == 0
     data = json_from_output(result.stdout)
