@@ -30,7 +30,10 @@ dependencies = [
 qsim = "cli.main:app"
 
 [tool.setuptools]
-packages = ["api", "cli", "core", "infra"]
+packages = ["api", "cli", "core", "core.agents", "infra"]
+
+[tool.setuptools.package-data]
+"core.agents" = ["prompts/*.md"]
 
 [tool.ruff]
 line-length = 100
