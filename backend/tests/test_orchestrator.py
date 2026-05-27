@@ -5,10 +5,12 @@ from collections.abc import Callable
 from typing import Literal, cast
 
 import pytest
+from qiskit import QuantumCircuit
 
 from core.agents.base import AgentContext, QUBOAgent, QUBOOutput
 from core.agents.critic import CriticVerdict
 from core.agents.refiner import RefinedQUBO, no_improvement_refinement
+from core.circuit_gen import CircuitData
 from core.evaluator import ComparisonTable, Scorecard
 from core.orchestrator import (
     AGENT_NAMES,
@@ -17,6 +19,7 @@ from core.orchestrator import (
     PipelineState,
     run_pipeline,
 )
+from core.runner import ClassicalResult, SimulationResult
 from core.templates import get_template
 
 
@@ -128,6 +131,52 @@ def _patch_agent_factories(
         "core.orchestrator._default_refiner_factory",
         lambda: lambda: StaticRefinerAgent(),
     )
+    monkeypatch.setattr("core.orchestrator.build_qaoa_circuit", _fake_build_qaoa_circuit)
+    monkeypatch.setattr("core.orchestrator.simulate_circuit", _fake_simulate_circuit)
+    monkeypatch.setattr("core.orchestrator.run_classical_baseline", _fake_classical_baseline)
+
+
+def _fake_build_qaoa_circuit(qubo: QUBOOutput) -> tuple[CircuitData, QuantumCircuit]:
+    circuit = QuantumCircuit(len(qubo.variable_order))
+    circuit.h(range(len(qubo.variable_order)))
+    return (
+        CircuitData(
+            qubit_count=len(qubo.variable_order),
+            depth=circuit.depth(),
+            gate_count=sum(circuit.count_ops().values()),
+            reps=2,
+            qiskit_qasm="OPENQASM 3.0;",
+        ),
+        circuit,
+    )
+
+
+def _fake_simulate_circuit(
+    circuit: QuantumCircuit,
+    qubo: QUBOOutput,
+    ir: object,
+    shots: int = 1024,
+) -> SimulationResult:
+    del circuit, ir
+    bitstring = "0" * len(qubo.variable_order)
+    return SimulationResult(
+        best_bitstring=bitstring,
+        best_objective=0.0,
+        quality_vs_classical=100.0,
+        top_5_bitstrings=[(bitstring, shots, 0.0)],
+        total_shots=shots,
+        runtime_ms=1.0,
+    )
+
+
+def _fake_classical_baseline(qubo: QUBOOutput, ir: object) -> ClassicalResult:
+    del ir
+    return ClassicalResult(
+        best_bitstring="0" * len(qubo.variable_order),
+        best_objective=0.0,
+        runtime_ms=1.0,
+        method="test",
+    )
 
 
 @pytest.mark.asyncio
@@ -148,7 +197,7 @@ async def test_full_pipeline_runs_on_templates(
     assert state["refined_qubo"].agent_name == state["critic_verdict"].winner_agent
     assert state["circuit_data"].qubit_count == state["refined_qubo"].estimated_qubits
     assert state["sim_result"].best_bitstring
-    assert state["classical_result"].feasible is True
+    assert state["classical_result"].method == "test"
     assert state["events"][-1].event_type == "pipeline_done"
 
 

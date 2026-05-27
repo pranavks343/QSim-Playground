@@ -9,6 +9,7 @@ from typing import Annotated, Any, Literal, TypedDict, TypeVar, cast
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
+from qiskit import QuantumCircuit
 
 from core.agents.base import AgentContext, QUBOAgent, QUBOOutput
 from core.agents.critic import CriticAgent, CriticVerdict
@@ -18,6 +19,7 @@ from core.agents.graph import GraphAgent
 from core.agents.penalty import PenaltyAgent
 from core.agents.refiner import RefinedQUBO, RefinerAgent
 from core.agents.slack import SlackAgent
+from core.circuit_gen import CircuitData, build_qaoa_circuit
 from core.evaluator import (
     ComparisonTable,
     Scorecard,
@@ -25,6 +27,7 @@ from core.evaluator import (
     evaluate_qubo,
 )
 from core.ir import ProblemIR
+from core.runner import ClassicalResult, SimulationResult, run_classical_baseline, simulate_circuit
 from core.templates import TemplateMetadata, list_templates
 from infra.gemini import GeminiClient
 from infra.settings import get_settings
@@ -78,39 +81,6 @@ class PipelineError(BaseModel):
     run_id: str
 
 
-class CircuitData(BaseModel):
-    """Circuit-generation artifact derived from the refined QUBO."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    source_agent_name: str
-    qubit_count: int
-    depth_estimate: int
-    gate_counts: dict[str, int]
-    qasm: str
-
-
-class SimulationResult(BaseModel):
-    """Quantum simulation summary."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    best_bitstring: str
-    energy: float
-    shots: int
-    success_probability: float = Field(ge=0.0, le=1.0)
-
-
-class ClassicalResult(BaseModel):
-    """Classical baseline result for the same QUBO."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    best_bitstring: str
-    objective_value: float
-    feasible: bool
-
-
 def _merge_dict(left: dict[str, T] | None, right: dict[str, T] | None) -> dict[str, T]:
     merged = dict(left or {})
     merged.update(right or {})
@@ -133,6 +103,7 @@ class PipelineState(TypedDict, total=False):
     critic_verdict: CriticVerdict
     refined_qubo: RefinedQUBO
     circuit_data: CircuitData
+    qaoa_circuit: QuantumCircuit
     sim_result: SimulationResult
     classical_result: ClassicalResult
     events: Annotated[list[PipelineEvent], _append_list]
@@ -198,32 +169,6 @@ def _default_refiner_factory() -> RefinerFactory:
     settings = get_settings()
     client = GeminiClient(settings.gemini_api_keys)
     return lambda: RefinerAgent(client)
-
-
-def _qubo_energy(output: QUBOOutput, bitstring: str) -> float:
-    values = [int(bit) for bit in bitstring]
-    total = 0.0
-    for row_index, row in enumerate(output.q_matrix):
-        for column_index, coefficient in enumerate(row):
-            total += coefficient * values[row_index] * values[column_index]
-    return total
-
-
-def _best_bitstring(output: QUBOOutput) -> tuple[str, float]:
-    qubit_count = len(output.variable_order)
-    if qubit_count > 16:
-        bitstring = "0" * qubit_count
-        return bitstring, _qubo_energy(output, bitstring)
-
-    best_bitstring = "0" * qubit_count
-    best_energy = _qubo_energy(output, best_bitstring)
-    for value in range(1, 2**qubit_count):
-        bitstring = format(value, f"0{qubit_count}b")
-        energy = _qubo_energy(output, bitstring)
-        if energy < best_energy:
-            best_bitstring = bitstring
-            best_energy = energy
-    return best_bitstring, round(best_energy, 6)
 
 
 def _build_agent_node(
@@ -376,21 +321,18 @@ def _build_circuit_node(
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def circuit_node(state: PipelineState) -> PipelineUpdate:
         refined = state["refined_qubo"]
-        qubit_count = len(refined.variable_order)
-        circuit = CircuitData(
-            source_agent_name=refined.agent_name,
-            qubit_count=qubit_count,
-            depth_estimate=max(1, qubit_count * 2),
-            gate_counts={"h": qubit_count, "rz": qubit_count, "cx": max(0, qubit_count - 1)},
-            qasm=f"// qsim placeholder circuit for {qubit_count} qubits",
-        )
+        circuit_data, circuit = build_qaoa_circuit(refined)
         event = await _emit(
             state,
             "circuit_ready",
-            {"qubit_count": qubit_count, "source_agent_name": refined.agent_name},
+            {
+                "qubit_count": circuit_data.qubit_count,
+                "depth": circuit_data.depth,
+                "gate_count": circuit_data.gate_count,
+            },
             event_callback,
         )
-        return {"circuit_data": circuit, "events": [event]}
+        return {"circuit_data": circuit_data, "qaoa_circuit": circuit, "events": [event]}
 
     return circuit_node
 
@@ -399,28 +341,32 @@ def _build_runner_node(
     event_callback: EventCallback | None,
 ) -> Callable[[PipelineState], Awaitable[PipelineUpdate]]:
     async def runner_node(state: PipelineState) -> PipelineUpdate:
-        bitstring, energy = _best_bitstring(state["refined_qubo"])
-        sim_result = SimulationResult(
-            best_bitstring=bitstring,
-            energy=energy,
-            shots=1024,
-            success_probability=0.75,
+        classical_result = run_classical_baseline(state["refined_qubo"], state["ir"])
+        sim_result = simulate_circuit(
+            state["qaoa_circuit"],
+            state["refined_qubo"],
+            state["ir"],
         )
-        classical_result = ClassicalResult(
-            best_bitstring=bitstring,
-            objective_value=energy,
-            feasible=True,
-        )
+        payload: dict[str, Any] = {
+            "best_bitstring": sim_result.best_bitstring,
+            "best_objective": sim_result.best_objective,
+            "quality_vs_classical": sim_result.quality_vs_classical,
+        }
+        if sim_result.quality_vs_classical < 80.0:
+            payload["quality_warning"] = "QAOA result is below 80% of classical baseline"
         simulation_done = await _emit(
             state,
             "simulation_done",
-            {"best_bitstring": bitstring, "energy": energy},
+            payload,
             event_callback,
         )
         pipeline_done = await _emit(
             state,
             "pipeline_done",
-            {"best_bitstring": bitstring, "winner": state["critic_verdict"].winner_agent},
+            {
+                "best_bitstring": sim_result.best_bitstring,
+                "winner": state["critic_verdict"].winner_agent,
+            },
             event_callback,
         )
         return {
