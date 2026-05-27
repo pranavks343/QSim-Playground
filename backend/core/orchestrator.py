@@ -16,6 +16,12 @@ from core.agents.domain import DomainAgent
 from core.agents.graph import GraphAgent
 from core.agents.penalty import PenaltyAgent
 from core.agents.slack import SlackAgent
+from core.evaluator import (
+    ComparisonTable,
+    Scorecard,
+    build_comparison_table,
+    evaluate_qubo,
+)
 from core.ir import ProblemIR
 from core.templates import TemplateMetadata, list_templates
 from infra.gemini import GeminiClient
@@ -26,6 +32,7 @@ EventType = Literal[
     "agent_done",
     "agent_failed",
     "scorecard_ready",
+    "comparison_ready",
     "critic_verdict",
     "refiner_done",
     "circuit_ready",
@@ -65,29 +72,6 @@ class PipelineError(BaseModel):
     error_type: str
     timestamp: datetime
     run_id: str
-
-
-class Scorecard(BaseModel):
-    """Evaluator score for one QUBO candidate."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    agent_name: str
-    objective_alignment: float = Field(ge=0.0, le=10.0)
-    feasibility_score: float = Field(ge=0.0, le=10.0)
-    qubit_efficiency: float = Field(ge=0.0, le=10.0)
-    matrix_sparsity: float = Field(ge=0.0, le=10.0)
-    overall_score: float = Field(ge=0.0, le=10.0)
-    rationale: str
-
-
-class ComparisonTable(BaseModel):
-    """Evaluator comparison table across all successful agents."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    rows: list[Scorecard] = Field(default_factory=list)
-    best_agent_name: str | None = None
 
 
 class CriticVerdict(BaseModel):
@@ -214,59 +198,16 @@ def _default_agent_factories() -> dict[str, AgentFactory]:
     }
 
 
-def _matrix_density(output: QUBOOutput) -> float:
-    size = len(output.q_matrix)
-    if size == 0:
-        return 0.0
-    non_zero = sum(1 for row in output.q_matrix for value in row if abs(value) > 1e-12)
-    return non_zero / (size * size)
-
-
-def _score_qubo(ir: ProblemIR, output: QUBOOutput) -> Scorecard:
-    original_qubits = len(ir.variables)
-    qubit_ratio = output.estimated_qubits / original_qubits if output.estimated_qubits else 1.0
-    qubit_efficiency = max(0.0, min(10.0, 10.0 / qubit_ratio))
-    sparsity_score = max(0.0, min(10.0, 10.0 * (1.0 - _matrix_density(output))))
-    feasibility_score = 8.0 if ir.constraints else 10.0
-    if "slack" in output.strategy.lower():
-        feasibility_score = 9.5
-    if "penalty" in output.strategy.lower():
-        feasibility_score = 8.5
-    objective_alignment = 8.0
-    if output.agent_name == "domain":
-        objective_alignment = 8.7
-    if output.agent_name == "graph" and ir.name == "max_cut":
-        objective_alignment = 9.2
-    overall_score = round(
-        0.30 * objective_alignment
-        + 0.30 * feasibility_score
-        + 0.20 * qubit_efficiency
-        + 0.20 * sparsity_score,
-        3,
-    )
-    return Scorecard(
-        agent_name=output.agent_name,
-        objective_alignment=objective_alignment,
-        feasibility_score=feasibility_score,
-        qubit_efficiency=round(qubit_efficiency, 3),
-        matrix_sparsity=round(sparsity_score, 3),
-        overall_score=overall_score,
-        rationale=(
-            f"{output.agent_name} scored {overall_score:g} from objective alignment, "
-            "feasibility handling, qubit efficiency, and matrix sparsity."
-        ),
-    )
-
-
 def _select_winner(scorecards: dict[str, Scorecard]) -> CriticVerdict:
     ordered = sorted(
-        scorecards.values(), key=lambda scorecard: scorecard.overall_score, reverse=True
+        scorecards.values(), key=lambda scorecard: scorecard.composite_score, reverse=True
     )
     winner = ordered[0]
     runner_up = ordered[1] if len(ordered) > 1 else None
     rejected = [scorecard.agent_name for scorecard in ordered[2:]]
     runner_text = (
-        f"{runner_up.agent_name} is close runner-up because of score {runner_up.overall_score:g}; "
+        f"{runner_up.agent_name} is close runner-up because of score "
+        f"{runner_up.composite_score:g}; "
         if runner_up
         else ""
     )
@@ -274,10 +215,10 @@ def _select_winner(scorecards: dict[str, Scorecard]) -> CriticVerdict:
         winner_agent_name=winner.agent_name,
         runner_up_agent_name=runner_up.agent_name if runner_up else None,
         rejected_agent_names=rejected,
-        best_score=winner.overall_score,
+        best_score=winner.composite_score,
         justification=(
             f"{winner.agent_name} wins because it has the strongest aggregate score "
-            f"({winner.overall_score:g}). {runner_text}"
+            f"({winner.composite_score:g}). {runner_text}"
             f"Rejected agents: {', '.join(rejected) if rejected else 'none'}."
         ),
     )
@@ -392,28 +333,36 @@ def _build_evaluator_node(
                 ],
             }
 
-        scorecards = {
-            agent_name: _score_qubo(state["ir"], output) for agent_name, output in qubos.items()
-        }
-        ordered = sorted(
-            scorecards.values(),
-            key=lambda scorecard: scorecard.overall_score,
-            reverse=True,
-        )
-        comparison_table = ComparisonTable(
-            rows=ordered,
-            best_agent_name=ordered[0].agent_name,
-        )
-        event = await _emit(
-            state,
-            "scorecard_ready",
-            {"agents": [scorecard.agent_name for scorecard in ordered]},
-            event_callback,
+        scorecards: dict[str, Scorecard] = {}
+        events: list[PipelineEvent] = []
+        for agent_name, output in qubos.items():
+            scorecard = evaluate_qubo(
+                output,
+                state["ir"],
+                state.get("template_metadata"),
+            )
+            scorecards[agent_name] = scorecard
+            events.append(
+                await _emit(
+                    state,
+                    "scorecard_ready",
+                    scorecard.model_dump(mode="json"),
+                    event_callback,
+                )
+            )
+        comparison_table = build_comparison_table(scorecards)
+        events.append(
+            await _emit(
+                state,
+                "comparison_ready",
+                comparison_table.model_dump(mode="json"),
+                event_callback,
+            )
         )
         return {
             "scorecards": scorecards,
             "comparison_table": comparison_table,
-            "events": [event],
+            "events": events,
         }
 
     return evaluator_node

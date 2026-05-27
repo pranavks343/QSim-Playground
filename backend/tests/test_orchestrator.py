@@ -96,6 +96,7 @@ async def test_full_pipeline_runs_on_templates(
     assert len(state["qubos"]) == 5
     assert len(state["scorecards"]) == 5
     assert state["critic_verdict"].winner_agent_name in state["qubos"]
+    assert state["comparison_table"].top_agent == state["critic_verdict"].winner_agent_name
     assert state["refined_qubo"].agent_name == state["critic_verdict"].winner_agent_name
     assert state["circuit_data"].qubit_count == state["refined_qubo"].estimated_qubits
     assert state["sim_result"].best_bitstring
@@ -154,7 +155,11 @@ async def test_event_callback_receives_events_in_pipeline_order(
     assert event_types.index("scorecard_ready") > max(
         index for index, event_type in enumerate(event_types) if event_type == "agent_done"
     )
-    assert event_types.index("critic_verdict") > event_types.index("scorecard_ready")
+    assert event_types.count("scorecard_ready") == 5
+    assert event_types.index("comparison_ready") > max(
+        index for index, event_type in enumerate(event_types) if event_type == "scorecard_ready"
+    )
+    assert event_types.index("critic_verdict") > event_types.index("comparison_ready")
     assert event_types.index("refiner_done") > event_types.index("critic_verdict")
     assert event_types.index("circuit_ready") > event_types.index("refiner_done")
     assert event_types.index("simulation_done") > event_types.index("circuit_ready")
