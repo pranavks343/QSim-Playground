@@ -75,6 +75,7 @@ class QUBOAgent(ABC):
     name: ClassVar[str]
     strategy_description: ClassVar[str]
     prompt_file: ClassVar[str]
+    temperature: ClassVar[float] = 0.2
 
     def __init__(self, gemini_client: GeminiClient) -> None:
         self._gemini_client = gemini_client
@@ -95,7 +96,11 @@ class QUBOAgent(ABC):
             ),
             run_id=context.run_id or "",
         )
-        return await self._gemini_client.generate_json(prompt, QUBOOutput, temperature=0.2)
+        return await self._gemini_client.generate_json(
+            prompt,
+            QUBOOutput,
+            temperature=self.temperature,
+        )
 
     def _build_user_message(self, context: AgentContext) -> str:
         """Return additional agent-specific instructions for a formulation request."""

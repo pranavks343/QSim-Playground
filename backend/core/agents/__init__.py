@@ -35,3 +35,6 @@ def list_agents() -> list[type[QUBOAgent]]:
 
 
 AgentDecorator = Callable[[type[QUBOAgent]], type[QUBOAgent]]
+
+
+from core.agents import penalty as penalty  # noqa: E402
