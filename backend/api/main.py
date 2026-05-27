@@ -8,6 +8,7 @@ from collections.abc import Sequence
 import sentry_sdk
 import structlog
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -90,7 +91,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         del request
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"detail": exc.errors()},
+            content={"detail": jsonable_encoder(exc.errors())},
         )
 
     @app.exception_handler(HTTPException)

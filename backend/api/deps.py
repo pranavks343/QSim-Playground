@@ -81,6 +81,7 @@ def get_current_user(
         raise _invalid_token_error()
 
     request.state.user_id = str(user_id)
+    request.state.bearer_jwt = bearer_jwt
     profile = _get_user_profile(user_id, bearer_jwt)
     return AuthenticatedUser(
         id=user_id,
