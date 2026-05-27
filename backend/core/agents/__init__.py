@@ -37,6 +37,7 @@ def list_agents() -> list[type[QUBOAgent]]:
 AgentDecorator = Callable[[type[QUBOAgent]], type[QUBOAgent]]
 
 
+from core.agents import decomp as decomp  # noqa: E402
 from core.agents import graph as graph  # noqa: E402
 from core.agents import penalty as penalty  # noqa: E402
 from core.agents import slack as slack  # noqa: E402
