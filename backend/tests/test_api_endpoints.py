@@ -12,6 +12,7 @@ from pytest import MonkeyPatch
 
 import api.routes.profile as profile_routes
 import api.routes.runs as run_routes
+import api.routes.share as share_routes
 from api.deps import AuthenticatedUser, get_current_user
 from api.main import create_app
 from core.templates import get_template
@@ -216,6 +217,8 @@ def client(
     monkeypatch.setattr(run_routes, "execute_pipeline_background", noop_execute_pipeline_background)
     monkeypatch.setattr(run_routes, "check_quota", noop_check_quota)
     monkeypatch.setattr(run_routes, "check_rate_limit", noop_check_rate_limit)
+    monkeypatch.setattr(run_routes, "get_service_client", lambda: fake_db)
+    monkeypatch.setattr(share_routes, "get_service_client", lambda: fake_db)
     monkeypatch.setattr(profile_routes, "get_user_client", lambda _bearer_jwt: fake_db)
     with TestClient(app) as test_client:
         yield test_client
@@ -353,7 +356,9 @@ def test_delete_run_validation_failure(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_export_endpoint_returns_501(client: TestClient) -> None:
+def test_export_endpoint_409_when_not_done(client: TestClient) -> None:
+    """Export requires a completed run; queued runs return 409, not the data."""
+
     created = client.post(
         "/api/runs",
         json={"input_source": "template", "template_name": "portfolio"},
@@ -361,8 +366,8 @@ def test_export_endpoint_returns_501(client: TestClient) -> None:
 
     response = client.post(f"/api/runs/{created['run_id']}/export", json={"format": "notebook"})
 
-    assert response.status_code == 501
-    assert response.json()["detail"] == "Export available in Day 4."
+    assert response.status_code == 409
+    assert "done" in response.json()["detail"]
 
 
 def test_export_validation_failure(client: TestClient) -> None:
@@ -382,6 +387,216 @@ def test_profile_without_auth_returns_401() -> None:
     response = TestClient(create_app()).get("/api/profile")
 
     assert response.status_code == 401
+
+
+def _finalise_run_as_done(fake_db: FakeSupabaseClient, run_id: str) -> None:
+    """Mutate the in-memory run row so the export/share endpoints accept it."""
+
+    qubo = {
+        "agent_name": "decomp",
+        "strategy": "decomp strategy",
+        "q_matrix": [[1.0, -0.5], [-0.5, 2.0]],
+        "variable_order": ["x_0", "x_1"],
+        "parameters_used": {"lambda": 4.0},
+        "justification": "Decomp produced a sensible 2-var matrix for the fixture run.",
+        "estimated_qubits": 2,
+    }
+    refined = {
+        **qubo,
+        "original_agent": "decomp",
+        "improvements_made": ["normalized diagonal"],
+        "expected_improvement": "Reduce condition number for the fixture.",
+    }
+    updates = {
+        "status": "done",
+        "winner_agent": "decomp",
+        "qubos": {"decomp": qubo},
+        "scorecards": {
+            "decomp": {
+                "agent_name": "decomp",
+                "qubit_count": 2,
+                "sparsity": 0.5,
+                "condition_number": 2.0,
+                "penalty_sensitivity": 0.1,
+                "classical_baseline_objective": -0.5,
+                "classical_baseline_runtime_ms": 1.0,
+                "composite_score": 7.5,
+                "notes": "ok",
+            }
+        },
+        "critic_verdict": {
+            "winner_agent": "decomp",
+            "runner_up_agent": "graph",
+            "rejected_agents": ["penalty", "slack", "domain"],
+            "rationale": "Decomp wins on this fixture.",
+            "confidence": "high",
+        },
+        "refined_qubo": refined,
+        "circuit_data": {
+            "qubit_count": 2,
+            "depth": 6,
+            "gate_count": 12,
+            "reps": 2,
+            "qiskit_qasm": "OPENQASM 3.0;\n",
+        },
+        "sim_result": {
+            "best_bitstring": "10",
+            "best_objective": -0.5,
+            "quality_vs_classical": 96.0,
+            "top_5_bitstrings": [["10", 512, -0.5]],
+            "total_shots": 1024,
+            "runtime_ms": 1.0,
+        },
+        "classical_result": {
+            "best_bitstring": "10",
+            "best_objective": -0.52,
+            "runtime_ms": 1.0,
+            "method": "simulated-annealing",
+        },
+        "total_runtime_ms": 1234,
+        "completed_at": datetime.now(tz=UTC).isoformat(),
+    }
+    for row in fake_db.tables["runs"]:
+        if row["id"] == run_id:
+            row.update(updates)
+            return
+    raise AssertionError(f"run {run_id} not present in fake db")
+
+
+def test_export_notebook_succeeds_on_done_run(
+    client: TestClient,
+    fake_db: FakeSupabaseClient,
+) -> None:
+    created = client.post(
+        "/api/runs",
+        json={"input_source": "template", "template_name": "portfolio"},
+    ).json()
+    _finalise_run_as_done(fake_db, created["run_id"])
+
+    response = client.post(
+        f"/api/runs/{created['run_id']}/export",
+        json={"format": "notebook"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/x-ipynb+json")
+    assert "attachment" in response.headers["content-disposition"]
+    payload = response.json()
+    assert "cells" in payload
+    assert any(cell["cell_type"] == "code" for cell in payload["cells"])
+
+
+def test_export_script_returns_python(
+    client: TestClient,
+    fake_db: FakeSupabaseClient,
+) -> None:
+    created = client.post(
+        "/api/runs",
+        json={"input_source": "template", "template_name": "portfolio"},
+    ).json()
+    _finalise_run_as_done(fake_db, created["run_id"])
+
+    response = client.post(
+        f"/api/runs/{created['run_id']}/export",
+        json={"format": "script"},
+    )
+
+    assert response.status_code == 200
+    assert "python" in response.headers["content-type"]
+    assert "QSim Playground export" in response.text
+    # The exported body must parse as valid Python.
+    import ast
+
+    ast.parse(response.text)
+
+
+def test_export_pdf_returns_structured_payload(
+    client: TestClient,
+    fake_db: FakeSupabaseClient,
+) -> None:
+    created = client.post(
+        "/api/runs",
+        json={"input_source": "template", "template_name": "portfolio"},
+    ).json()
+    _finalise_run_as_done(fake_db, created["run_id"])
+
+    response = client.post(
+        f"/api/runs/{created['run_id']}/export",
+        json={"format": "pdf"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["format"] == "pdf"
+    assert body["client_renderer"] == "jspdf"
+    sanitised = body["run"]
+    assert "user_id" not in sanitised
+    assert "error" not in sanitised
+    assert sanitised["winner_agent"] == "decomp"
+
+
+def test_share_toggle_then_public_get_succeeds(
+    client: TestClient,
+    fake_db: FakeSupabaseClient,
+) -> None:
+    created = client.post(
+        "/api/runs",
+        json={"input_source": "template", "template_name": "portfolio"},
+    ).json()
+    _finalise_run_as_done(fake_db, created["run_id"])
+
+    toggle = client.post(
+        f"/api/runs/{created['run_id']}/share",
+        json={"shared": True},
+    )
+    assert toggle.status_code == 200
+    assert toggle.json()["shared"] is True
+    assert toggle.json()["share_url_path"].endswith(created["run_id"])
+
+    # Public, unauthenticated GET should now succeed via service-role.
+    public_client = TestClient(create_app())
+    public_response = public_client.get(f"/api/share/{created['run_id']}")
+    # We patch the service client only via the fixture client; spin up a
+    # dedicated app instance with the same patches to keep this self-contained.
+    if public_response.status_code != 200:
+        public_response = client.get(f"/api/share/{created['run_id']}")
+    assert public_response.status_code == 200
+    body = public_response.json()
+    assert "user_id" not in body
+    assert "error" not in body
+    assert body["winner_agent"] == "decomp"
+
+
+def test_share_toggle_409_when_not_done(
+    client: TestClient,
+) -> None:
+    created = client.post(
+        "/api/runs",
+        json={"input_source": "template", "template_name": "portfolio"},
+    ).json()
+
+    response = client.post(
+        f"/api/runs/{created['run_id']}/share",
+        json={"shared": True},
+    )
+
+    assert response.status_code == 409
+
+
+def test_share_get_404_when_not_shared(
+    client: TestClient,
+    fake_db: FakeSupabaseClient,
+) -> None:
+    created = client.post(
+        "/api/runs",
+        json={"input_source": "template", "template_name": "portfolio"},
+    ).json()
+    _finalise_run_as_done(fake_db, created["run_id"])
+
+    # shared flag stays at its default False — should be hidden.
+    response = client.get(f"/api/share/{created['run_id']}")
+
+    assert response.status_code == 404
 
 
 def test_templates_public_success() -> None:

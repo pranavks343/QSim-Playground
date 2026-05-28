@@ -2,32 +2,36 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import ValidationError
 from starlette import status
 
 from api.deps import AuthenticatedUser, get_current_user
 from api.execution import execute_pipeline_background
+from api.export import build_notebook, build_script, export_filename
 from api.limits import check_quota, check_rate_limit, tier_limits
 from api.schemas import (
     CreateRunRequest,
     CreateRunResponse,
-    ExportNotImplementedResponse,
     ExportRequest,
     RunEventsResponse,
     RunListResponse,
     RunResponse,
+    ShareToggleRequest,
+    ShareToggleResponse,
     ir_to_json_dict,
 )
 from core.ir import ProblemIR
 from core.parser import ParseFailure, ParseSuccess, parse
 from core.templates import get_template
 from infra.gemini import is_gemini_circuit_open
-from infra.supabase import get_user_client
+from infra.supabase import get_service_client, get_user_client
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -186,22 +190,149 @@ def cancel_run(
     return {"run_id": str(run_id), "status": row.get("status"), "cancel_requested": True}
 
 
-@router.post(
-    "/{run_id}/export",
-    response_model=ExportNotImplementedResponse,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-)
+@router.post("/{run_id}/export")
 def export_run(
     run_id: UUID,
     payload: ExportRequest,
     request: Request,
     current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
-) -> ExportNotImplementedResponse:
-    """Placeholder export endpoint."""
+) -> Response:
+    """Generate an export artifact for a completed run.
 
-    del payload, current_user
-    _fetch_owned_run(request, run_id)
-    return ExportNotImplementedResponse(detail="Export available in Day 4.")
+    PDF is handed back to the client because we ship it from jsPDF; this
+    endpoint only returns the structured data + a recorded export row so
+    download_count stays correct.
+    """
+
+    row = _fetch_owned_run(request, run_id)
+    if row.get("status") != "done":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Export is only available for runs in status='done'",
+        )
+
+    _record_export(run_id, payload.format)
+
+    if payload.format == "notebook":
+        notebook = build_notebook(row)
+        body = json.dumps(notebook, indent=1, sort_keys=True)
+        filename = export_filename(row, "ipynb")
+        return Response(
+            content=body,
+            media_type="application/x-ipynb+json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    if payload.format == "script":
+        script = build_script(row)
+        filename = export_filename(row, "py")
+        return PlainTextResponse(
+            content=script,
+            media_type="text/x-python",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    if payload.format == "pdf":
+        # The frontend assembles the PDF via jsPDF using this structured
+        # payload — the server stays light and keeps no PDF rendering deps.
+        return JSONResponse(
+            {
+                "format": "pdf",
+                "client_renderer": "jspdf",
+                "run": _sanitized_share_payload(row),
+            }
+        )
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=f"Unknown export format: {payload.format}",
+    )
+
+
+@router.post("/{run_id}/share", response_model=ShareToggleResponse)
+def toggle_share(
+    run_id: UUID,
+    payload: ShareToggleRequest,
+    request: Request,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+) -> ShareToggleResponse:
+    """Toggle a run's public shareability."""
+
+    del current_user
+    row = _fetch_owned_run(request, run_id)
+    if payload.shared and row.get("status") != "done":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only completed runs can be shared",
+        )
+    response = (
+        _client_for_request(request)
+        .table("runs")
+        .update({"shared": payload.shared})
+        .eq("id", str(run_id))
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+    return ShareToggleResponse(
+        run_id=run_id,
+        shared=payload.shared,
+        share_url_path=f"/share/{run_id}",
+    )
+
+
+def _record_export(run_id: UUID, fmt: str) -> None:
+    """Insert a row in ``exports``; increment download_count if one exists."""
+
+    client = get_service_client()
+    try:
+        existing = (
+            client.table("exports")
+            .select("id, download_count")
+            .eq("run_id", str(run_id))
+            .eq("format", fmt)
+            .execute()
+        )
+    except Exception:
+        existing = None  # noqa: E731
+    if existing is not None and getattr(existing, "data", None):
+        row = existing.data[0]
+        client.table("exports").update(
+            {
+                "download_count": int(row.get("download_count", 0)) + 1,
+                "last_accessed_at": datetime.now(tz=UTC).isoformat(),
+            }
+        ).eq("id", row["id"]).execute()
+    else:
+        client.table("exports").insert(
+            {
+                "run_id": str(run_id),
+                "format": fmt,
+                "download_count": 1,
+                "last_accessed_at": datetime.now(tz=UTC).isoformat(),
+            }
+        ).execute()
+
+
+def _sanitized_share_payload(row: dict[str, Any]) -> dict[str, Any]:
+    """Strip ``user_id``, ``error``, and other private fields from a run row."""
+
+    keep = {
+        "id",
+        "status",
+        "template",
+        "input_source",
+        "problem_ir",
+        "qubos",
+        "scorecards",
+        "winner_agent",
+        "critic_verdict",
+        "refined_qubo",
+        "circuit_data",
+        "sim_result",
+        "classical_result",
+        "total_runtime_ms",
+        "created_at",
+        "completed_at",
+    }
+    return {key: row.get(key) for key in keep}
 
 
 def _client_for_request(request: Request) -> Any:

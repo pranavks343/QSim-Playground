@@ -7,6 +7,7 @@ import { AgentCard } from "@/components/runs/agent-card";
 import { BenchmarkPanel } from "@/components/runs/benchmark-panel";
 import { CircuitPanel } from "@/components/runs/circuit-panel";
 import { CriticVerdictPanel } from "@/components/runs/critic-verdict";
+import { ExportBar } from "@/components/runs/export-bar";
 import { FailureCard } from "@/components/runs/failure-card";
 import { ProgressStepper } from "@/components/runs/progress-stepper";
 import { RefinerPanel } from "@/components/runs/refiner-panel";
@@ -135,6 +136,9 @@ function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
           simulation={run.sim_result ?? null}
         />
       ) : null}
+
+      <ExportBar run={run} />
+
 
       {!showScorecardTable && !showFailure ? (
         <Card className="border-dashed">

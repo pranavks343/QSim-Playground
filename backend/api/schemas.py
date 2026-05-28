@@ -72,6 +72,7 @@ class RunResponse(BaseModel):
     error: str | None = None
     total_runtime_ms: int | None = None
     cancel_requested: bool = False
+    shared: bool = False
     created_at: str
     completed_at: str | None = None
     deleted_at: str | None = None
@@ -114,12 +115,48 @@ class ExportRequest(BaseModel):
     format: ExportFormat
 
 
-class ExportNotImplementedResponse(BaseModel):
-    """Export placeholder response."""
+class ShareToggleRequest(BaseModel):
+    """Request body for toggling a run's shareable state."""
 
     model_config = ConfigDict(extra="forbid")
 
-    detail: str
+    shared: bool
+
+
+class ShareToggleResponse(BaseModel):
+    """Response after toggling sharing state."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: UUID
+    shared: bool
+    share_url_path: str
+
+
+class SharedRunResponse(BaseModel):
+    """Read-only sanitized view of a shared run.
+
+    Never includes ``user_id``, ``error``, or any cross-run information.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    status: RunStatus
+    template: str | None = None
+    input_source: InputSource
+    problem_ir: dict[str, Any]
+    qubos: dict[str, Any] | None = None
+    scorecards: dict[str, Any] | None = None
+    winner_agent: str | None = None
+    critic_verdict: dict[str, Any] | None = None
+    refined_qubo: dict[str, Any] | None = None
+    circuit_data: dict[str, Any] | None = None
+    sim_result: dict[str, Any] | None = None
+    classical_result: dict[str, Any] | None = None
+    total_runtime_ms: int | None = None
+    created_at: str
+    completed_at: str | None = None
 
 
 class ProfileResponse(BaseModel):

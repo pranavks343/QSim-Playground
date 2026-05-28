@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   pipelineEventSchema,
   runSchema,
+  sharedRunSchema,
   type PipelineEvent,
-  type Run
+  type Run,
+  type SharedRun
 } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -62,6 +64,21 @@ export async function fetchRunInitial(
   );
   if (isError(eventsResult)) return eventsResult;
   return { run: runResult, events: eventsResult.items };
+}
+
+export async function fetchSharedRun(
+  runId: string
+): Promise<SharedRun | ServerFetchError> {
+  const response = await fetch(`${API_URL}/api/share/${runId}`, {
+    headers: { Accept: "application/json" },
+    cache: "no-store"
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    return { status: response.status, message: text || response.statusText };
+  }
+  const json: unknown = text ? JSON.parse(text) : null;
+  return sharedRunSchema.parse(json);
 }
 
 export function isError(value: unknown): value is ServerFetchError {

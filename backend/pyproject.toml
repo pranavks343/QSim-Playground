@@ -61,6 +61,11 @@ ignore_missing_imports = true
 module = ["qiskit.*", "qiskit_aer.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["nbformat.*"]
+ignore_missing_imports = true
+disallow_untyped_calls = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--strict-markers --strict-config"

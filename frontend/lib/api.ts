@@ -8,17 +8,24 @@ import { createClient } from "@/lib/supabase/client";
 import {
   createRunResponseSchema,
   parseValidateResponseSchema,
+  pdfExportResponseSchema,
   pipelineEventSchema,
   profileSchema,
   problemIRSchema,
   runSchema,
+  shareToggleResponseSchema,
+  sharedRunSchema,
   templateMetadataSchema,
   type CreateRunResponse,
+  type ExportFormat,
   type ParseValidateResponse,
+  type PdfExportResponse,
   type PipelineEvent,
   type Profile,
   type ProblemIR,
   type Run,
+  type SharedRun,
+  type ShareToggleResponse,
   type TemplateMetadata
 } from "@/lib/types";
 
@@ -151,4 +158,80 @@ export async function validateSourceCode(sourceCode: string): Promise<ParseValid
     method: "POST",
     body: { source_code: sourceCode }
   });
+}
+
+export async function fetchExportPdfPayload(runId: string): Promise<PdfExportResponse> {
+  return apiFetch(`/api/runs/${runId}/export`, pdfExportResponseSchema, {
+    method: "POST",
+    body: { format: "pdf" }
+  });
+}
+
+export async function downloadExportFile(
+  runId: string,
+  format: Exclude<ExportFormat, "pdf">
+): Promise<{ blob: Blob; filename: string }> {
+  const supabase = createClient();
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+  const headers = new Headers({ "Content-Type": "application/json", Accept: "*/*" });
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
+  const response = await fetch(`${API_URL}/api/runs/${runId}/export`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ format })
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new ApiError(
+      "Export failed",
+      response.status,
+      detail,
+      response.headers.get("retry-after")
+    );
+  }
+  const filename = parseFilenameFromContentDisposition(
+    response.headers.get("content-disposition")
+  );
+  const blob = await response.blob();
+  return { blob, filename: filename ?? defaultExportFilename(runId, format) };
+}
+
+function parseFilenameFromContentDisposition(value: string | null): string | null {
+  if (value === null) return null;
+  const match = /filename="([^"]+)"/.exec(value);
+  return match ? match[1] : null;
+}
+
+function defaultExportFilename(runId: string, format: ExportFormat): string {
+  const extension = format === "notebook" ? "ipynb" : format === "script" ? "py" : "json";
+  return `qsim_run_${runId.slice(0, 8)}.${extension}`;
+}
+
+export function triggerBrowserDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+export async function toggleShare(
+  runId: string,
+  shared: boolean
+): Promise<ShareToggleResponse> {
+  return apiFetch(`/api/runs/${runId}/share`, shareToggleResponseSchema, {
+    method: "POST",
+    body: { shared }
+  });
+}
+
+export async function getSharedRun(runId: string): Promise<SharedRun> {
+  return apiFetch(`/api/share/${runId}`, sharedRunSchema);
 }

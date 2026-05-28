@@ -134,9 +134,43 @@ export const runSchema = z.object({
   error: z.string().nullable().optional(),
   total_runtime_ms: z.number().int().nullable().optional(),
   cancel_requested: z.boolean().optional(),
+  shared: z.boolean().optional(),
   created_at: z.string(),
   completed_at: z.string().nullable().optional(),
   deleted_at: z.string().nullable().optional()
+});
+
+export const sharedRunSchema = z.object({
+  id: z.string().uuid(),
+  status: runStatusSchema,
+  template: z.string().nullable().optional(),
+  input_source: inputSourceSchema,
+  problem_ir: problemIRSchema,
+  qubos: z.record(z.string(), quboOutputSchema).nullable().optional(),
+  scorecards: z.record(z.string(), scorecardSchema).nullable().optional(),
+  winner_agent: z.string().nullable().optional(),
+  critic_verdict: criticVerdictSchema.nullable().optional(),
+  refined_qubo: refinedQuboSchema.nullable().optional(),
+  circuit_data: circuitDataSchema.nullable().optional(),
+  sim_result: simulationResultSchema.nullable().optional(),
+  classical_result: classicalResultSchema.nullable().optional(),
+  total_runtime_ms: z.number().int().nullable().optional(),
+  created_at: z.string(),
+  completed_at: z.string().nullable().optional()
+});
+
+export const shareToggleResponseSchema = z.object({
+  run_id: z.string().uuid(),
+  shared: z.boolean(),
+  share_url_path: z.string()
+});
+
+export const exportFormatSchema = z.enum(["notebook", "pdf", "script"]);
+
+export const pdfExportResponseSchema = z.object({
+  format: z.literal("pdf"),
+  client_renderer: z.literal("jspdf"),
+  run: sharedRunSchema
 });
 
 export const templateMetadataSchema = z.object({
@@ -192,3 +226,7 @@ export type TemplateMetadata = z.infer<typeof templateMetadataSchema>;
 export type Profile = z.infer<typeof profileSchema>;
 export type CreateRunResponse = z.infer<typeof createRunResponseSchema>;
 export type ParseValidateResponse = z.infer<typeof parseValidateResponseSchema>;
+export type SharedRun = z.infer<typeof sharedRunSchema>;
+export type ShareToggleResponse = z.infer<typeof shareToggleResponseSchema>;
+export type ExportFormat = z.infer<typeof exportFormatSchema>;
+export type PdfExportResponse = z.infer<typeof pdfExportResponseSchema>;
