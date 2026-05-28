@@ -6,10 +6,37 @@ QSim Playground is a multi-agent quantum optimization sandbox for ML engineers.
 
 ## Status
 
-Day 3 backend is complete: FastAPI service, Supabase auth and RLS, background
-pipeline execution, tiered quotas, rate limiting, qubit caps, Gemini circuit
-breaker, and multi-user concurrency verification. Day 4 starts the Next.js
-frontend.
+Day 4 frontend is complete: Next.js app with Supabase auth, the live
+agent-trace screen with Realtime + polling fallback, scorecard / critic /
+refiner / circuit / benchmark panels, four export formats (notebook,
+script, PDF, shareable link), keyboard shortcuts, and a passing
+two-user local integration test. Day 5 begins production deploy
+(Cloud Run + Vercel).
+
+## Screenshots
+
+![Agent trace screen mid-flight](docs/screenshots/agent-trace-live.png)
+
+The trace screen during a run — five specialist agents formulate
+competing QUBOs in parallel; the stepper at the top tracks pipeline
+progress.
+
+![Agent trace screen complete](docs/screenshots/agent-trace-done.png)
+
+The same screen once the run finishes — scorecard comparison table,
+critic verdict pull-quote, refined QUBO, QAOA circuit metadata, and the
+benchmark panel with the honesty banner ("Classical wins on this
+instance" when the simulator can't beat simulated annealing).
+
+![Shared read-only link in an incognito window](docs/screenshots/share-page.png)
+
+The `/share/<id>` page is unauthenticated and sanitised — owner email,
+other runs, and internal error text are never included.
+
+> Capture instructions for re-shooting these are in
+> [`docs/screenshots/README.md`](docs/screenshots/README.md). The PNGs
+> are checked into the repo so README links resolve on GitHub without
+> external hosting.
 
 ## Quickstart
 
@@ -49,6 +76,34 @@ uvicorn api.main:app --reload --port 8000
 # 6. Run the test suite
 python -m pytest
 ```
+
+### Frontend
+
+```bash
+# In a second terminal — install Node deps
+cd frontend
+npm install
+
+# Create the public env file from the same Supabase project
+cat > .env.local <<EOF
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=<your Supabase URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your Supabase anon key>
+EOF
+
+# Run the dev server
+npm run dev   # serves http://localhost:3000
+
+# Frontend tests (pure-TS unit + Playwright e2e)
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run test:e2e     # requires the backend running on :8000
+```
+
+The two-user local integration test playbook lives at
+[`docs/INTEGRATION_TEST.md`](docs/INTEGRATION_TEST.md) — run through it
+before every deploy.
 
 The CLI also runs the full pipeline locally without the API:
 

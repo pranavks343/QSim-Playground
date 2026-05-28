@@ -128,6 +128,113 @@ sequenceDiagram
     FastAPI-->>Client: 200 with full run state
 ```
 
+## Frontend data flow
+
+The Next.js client renders the run-detail page in two phases: a
+server-rendered shell that pre-populates the page with whatever state
+the backend already has, and a long-lived client subscription that
+streams new events as they arrive.
+
+### Initial render (server)
+
+`app/(app)/runs/[id]/page.tsx` is an async server component. It calls
+`lib/api-server.fetchRunInitial(runId)`, which reads the Supabase session
+cookie via `@supabase/ssr`, extracts the user's JWT, and issues two
+authenticated GETs against the backend in sequence:
+
+1. `GET /api/runs/{id}` — full run row.
+2. `GET /api/runs/{id}/events` — every event already written.
+
+Both responses are validated through the shared zod schemas in
+`frontend/lib/types.ts`. The page hands the validated `Run` plus the
+`PipelineEvent[]` directly to the client `RunDetailView` as props, so
+the first paint already shows everything the backend knows.
+
+### Live updates (client)
+
+`components/runs/use-run-stream.ts` is the streaming brain. On mount
+it:
+
+1. Seeds React state from the SSR props.
+2. Calls `createBrowserClient` and opens a Supabase Realtime channel
+   `run-events:{run_id}` with a Postgres-changes filter limited to
+   `run_events INSERT` rows where `run_id=eq.<id>`. Supabase's RLS
+   policy on `run_events` ensures only events for the caller's run are
+   delivered.
+3. As each row arrives, it parses via `pipelineEventSchema`, dedupes by
+   event id, and appends to React state — components that read the
+   state re-render via `deriveLiveState` (a pure reducer over the
+   event log).
+4. On a terminal event (`pipeline_done` / `pipeline_failed` /
+   `pipeline_cancelled`) it unsubscribes and re-fetches the full run
+   with `GET /api/runs/{id}` so the persisted result fields populate
+   the panels.
+
+### Polling fallback
+
+If the Supabase channel reports `CLOSED`, `CHANNEL_ERROR`, or
+`TIMED_OUT`, the hook flips to a 3-second polling loop hitting
+`GET /api/runs/{id}/events?after_event_id=<highest seen id>`. The
+loop:
+
+- Catches up missed events (the connection might have dropped during
+  a burst).
+- Surfaces no UI noise — a `Polling` badge in the page header is the
+  only signal.
+- Tears down again as soon as the channel resubscribes.
+
+This is the "kill WiFi mid-run" recovery path. The badge in the
+`RunDetailView` header transitions
+`Connecting…` → `Live` → `Polling` → `Live` automatically; the user
+never has to click anything.
+
+### Network errors
+
+`lib/api.ts:apiFetch` wraps every backend call. A thrown `fetch`
+(offline, DNS failure, backend down) is caught and surfaced as a
+`Network error — check your connection` toast plus an `ApiError`
+with `status=0`. Non-2xx responses route through
+`lib/error-state.describeApiError`, which classifies the status code
+(`auth` / `rate_limit` / `service_busy` / `validation` /
+`not_found` / `server` / `network`) and returns title + description
+copy; 429 / 503 toasts include a real countdown derived from the
+`Retry-After` header (integer seconds or HTTP-date supported).
+
+### Public share path
+
+`app/(public)/share/[id]/page.tsx` mirrors the same SSR pattern but
+fetches `GET /api/share/{id}` **without** the authorization header.
+The backend route uses the service-role client to bypass RLS, then
+filters strictly on `shared = true AND status = 'done' AND
+deleted_at IS NULL` and returns a sanitised payload (`SharedRunResponse`,
+never includes `user_id` or `error`). The client renders a
+`SharedRunView` that re-uses the same agent / scorecard / critic /
+refiner / circuit / benchmark components — no streaming hook, no
+export controls.
+
+### Code splitting
+
+Two heavy dependencies are lazy-loaded via `next/dynamic` so they
+never enter the initial bundle of any page that doesn't need them:
+
+- **Monaco** (`@monaco-editor/react`) loads only when the **Code**
+  tab on `/new` is active.
+- **Recharts** (`BarChart` + axes + tooltip) loads only when the
+  `BenchmarkPanel` on `/runs/[id]` renders.
+
+Both ship `ssr: false` and a `<Skeleton>` placeholder so the layout
+doesn't shift while the chunk fetches.
+
+### Keyboard shortcuts
+
+`components/shared/keyboard-shortcuts-provider.tsx` is mounted once
+inside the `(app)` layout. It binds a single `window.keydown`
+listener and dispatches via `lib/keyboard-shortcuts.matchShortcut`,
+which deliberately ignores inputs, textareas, contenteditable
+elements, Monaco's `role=textbox` container, and any keydown that
+already has `defaultPrevented`. Two shortcuts ship: `n` opens
+`/new`, `?` toggles the help dialog.
+
 Plain-ASCII version (for terminals without mermaid):
 
 ```
