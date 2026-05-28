@@ -4,8 +4,13 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { AgentCard } from "@/components/runs/agent-card";
+import { BenchmarkPanel } from "@/components/runs/benchmark-panel";
+import { CircuitPanel } from "@/components/runs/circuit-panel";
+import { CriticVerdictPanel } from "@/components/runs/critic-verdict";
 import { FailureCard } from "@/components/runs/failure-card";
 import { ProgressStepper } from "@/components/runs/progress-stepper";
+import { RefinerPanel } from "@/components/runs/refiner-panel";
+import { ScorecardTable } from "@/components/runs/scorecard-table";
 import { useRunStream, type UseRunStreamResult } from "@/components/runs/use-run-stream";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +39,13 @@ function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
   const winnerAgent = live.criticVerdict?.winner_agent ?? run.winner_agent ?? null;
   const showFailure = live.terminal === "failed" || live.terminal === "cancelled";
   const failureKind = live.terminal === "cancelled" ? "cancelled" : "failed";
+
+  const showScorecardTable =
+    live.comparisonTable !== null || live.scorecards.length > 0 || run.scorecards != null;
+  const showCritic = live.criticVerdict !== null || run.critic_verdict != null;
+  const showRefiner = live.refinerEvent !== null || run.refined_qubo != null;
+  const showCircuit = live.circuitEvent !== null || run.circuit_data != null;
+  const showBenchmark = live.simulationEvent !== null || run.sim_result != null;
 
   return (
     <div className="space-y-6">
@@ -92,14 +104,46 @@ function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
         </div>
       </section>
 
-      {!showFailure ? (
+      {showScorecardTable ? (
+        <ScorecardTable
+          scorecards={live.scorecards.length > 0 ? live.scorecards : Object.values(run.scorecards ?? {})}
+          winnerAgent={winnerAgent}
+          runnerUpAgent={
+            live.criticVerdict?.runner_up_agent ??
+            live.comparisonTable?.runner_up ??
+            null
+          }
+        />
+      ) : null}
+
+      {showCritic ? (
+        <CriticVerdictPanel verdict={live.criticVerdict ?? run.critic_verdict ?? null} />
+      ) : null}
+
+      {showRefiner ? (
+        <RefinerPanel
+          refined={run.refined_qubo ?? null}
+          refinerEvent={live.refinerEvent}
+        />
+      ) : null}
+
+      {showCircuit ? <CircuitPanel circuit={run.circuit_data ?? null} /> : null}
+
+      {showBenchmark ? (
+        <BenchmarkPanel
+          classical={run.classical_result ?? null}
+          simulation={run.sim_result ?? null}
+        />
+      ) : null}
+
+      {!showScorecardTable && !showFailure ? (
         <Card className="border-dashed">
           <CardContent className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
-            Streaming live updates… scorecards, critic verdict, and benchmarks appear as the pipeline progresses.
+            Streaming live updates… cards will appear as the pipeline progresses.
           </CardContent>
         </Card>
       ) : null}

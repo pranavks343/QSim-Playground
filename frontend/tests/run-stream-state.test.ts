@@ -194,6 +194,49 @@ test("comparison_ready then critic_verdict advance the stepper", () => {
   assert.equal(state.criticVerdict?.winner_agent, "decomp");
 });
 
+test("panel-visibility flags flip as the matching events arrive", () => {
+  // Build a partial run: scorecards in, critic in, refiner+circuit+sim not yet.
+  const partial = [
+    ...AGENT_ORDER.flatMap<EventInput>((name) => [
+      { type: "agent_started", payload: { agent_name: name } },
+      { type: "agent_done", payload: { agent_name: name, estimated_qubits: 6 } }
+    ]),
+    {
+      type: "scorecard_ready",
+      payload: {
+        agent_name: "decomp",
+        qubit_count: 6,
+        sparsity: 0.5,
+        condition_number: 2.5,
+        penalty_sensitivity: 0.1,
+        classical_baseline_objective: -0.5,
+        classical_baseline_runtime_ms: 1.0,
+        composite_score: 7.0,
+        notes: "ok"
+      }
+    },
+    {
+      type: "critic_verdict",
+      payload: {
+        winner_agent: "decomp",
+        runner_up_agent: "graph",
+        rejected_agents: [],
+        rationale: "x",
+        confidence: "medium"
+      }
+    }
+  ] as EventInput[];
+  const state = deriveLiveState(makeEvents(partial));
+  // Scorecard table should be ready
+  assert.equal(state.scorecards.length > 0, true);
+  // Critic verdict visible
+  assert.notEqual(state.criticVerdict, null);
+  // Refiner, circuit, benchmark NOT yet visible
+  assert.equal(state.refinerEvent, null);
+  assert.equal(state.circuitEvent, null);
+  assert.equal(state.simulationEvent, null);
+});
+
 test("a full successful run reaches all stages and terminal=done", () => {
   const state = deriveLiveState(makeEvents(fullSuccessEvents()));
   for (const name of AGENT_ORDER) {
