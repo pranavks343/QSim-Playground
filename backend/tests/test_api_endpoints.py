@@ -119,6 +119,7 @@ class FakeSupabaseClient:
         row = payload.copy()
         if table_name == "runs":
             row.setdefault("id", str(uuid4()))
+            row.setdefault("status", "queued")
             row.setdefault("created_at", datetime.now(tz=UTC).isoformat())
             row.setdefault("completed_at", None)
             row.setdefault("deleted_at", None)

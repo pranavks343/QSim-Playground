@@ -51,7 +51,6 @@ async def create_run(
         .insert(
             {
                 "user_id": str(current_user.id),
-                "status": "queued",
                 "template": payload.template_name,
                 "input_source": payload.input_source,
                 "problem_ir": ir_to_json_dict(problem_ir),
