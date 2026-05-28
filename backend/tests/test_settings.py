@@ -25,7 +25,16 @@ def test_settings_parses_comma_separated_environment_values() -> None:
 
 def test_settings_rejects_missing_required_values() -> None:
     with pytest.raises(ValidationError, match="value must include at least one entry"):
-        Settings()
+        Settings.model_validate(
+            {
+                "GEMINI_API_KEYS": "",
+                "SUPABASE_URL": "",
+                "SUPABASE_ANON_KEY": "",
+                "SUPABASE_SERVICE_ROLE_KEY": "",
+                "SUPABASE_JWT_SECRET": "",
+                "ALLOWED_ORIGINS": "",
+            }
+        )
 
 
 def test_settings_rejects_supabase_placeholders() -> None:

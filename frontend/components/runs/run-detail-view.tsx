@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { AgentCard } from "@/components/runs/agent-card";
-import { BenchmarkPanel } from "@/components/runs/benchmark-panel";
-import { CircuitPanel } from "@/components/runs/circuit-panel";
+import { BenchmarkPanel, type SimulationPreview } from "@/components/runs/benchmark-panel";
+import { CircuitPanel, type CircuitPreview } from "@/components/runs/circuit-panel";
 import { CriticVerdictPanel } from "@/components/runs/critic-verdict";
 import { ExportBar } from "@/components/runs/export-bar";
 import { FailureCard } from "@/components/runs/failure-card";
@@ -44,9 +44,11 @@ function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
   const showScorecardTable =
     live.comparisonTable !== null || live.scorecards.length > 0 || run.scorecards != null;
   const showCritic = live.criticVerdict !== null || run.critic_verdict != null;
+  const circuitPreview = run.circuit_data ?? circuitPreviewFromEvent(live.circuitEvent);
+  const simulationPreview = run.sim_result ?? simulationPreviewFromEvent(live.simulationEvent);
   const showRefiner = live.refinerEvent !== null || run.refined_qubo != null;
-  const showCircuit = live.circuitEvent !== null || run.circuit_data != null;
-  const showBenchmark = live.simulationEvent !== null || run.sim_result != null;
+  const showCircuit = circuitPreview !== null;
+  const showBenchmark = simulationPreview !== null || run.classical_result != null;
 
   return (
     <div className="space-y-6">
@@ -128,12 +130,12 @@ function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
         />
       ) : null}
 
-      {showCircuit ? <CircuitPanel circuit={run.circuit_data ?? null} /> : null}
+      {showCircuit ? <CircuitPanel circuit={circuitPreview} /> : null}
 
       {showBenchmark ? (
         <BenchmarkPanel
           classical={run.classical_result ?? null}
-          simulation={run.sim_result ?? null}
+          simulation={simulationPreview}
         />
       ) : null}
 
@@ -153,6 +155,40 @@ function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
       ) : null}
     </div>
   );
+}
+
+function circuitPreviewFromEvent(event: PipelineEvent | null): CircuitPreview | null {
+  if (event === null) return null;
+  const payload = event.payload;
+  if (
+    typeof payload.qubit_count !== "number" ||
+    typeof payload.depth !== "number" ||
+    typeof payload.gate_count !== "number"
+  ) {
+    return null;
+  }
+  return {
+    qubit_count: payload.qubit_count,
+    depth: payload.depth,
+    gate_count: payload.gate_count
+  };
+}
+
+function simulationPreviewFromEvent(event: PipelineEvent | null): SimulationPreview | null {
+  if (event === null) return null;
+  const payload = event.payload;
+  if (
+    typeof payload.best_bitstring !== "string" ||
+    typeof payload.best_objective !== "number" ||
+    typeof payload.quality_vs_classical !== "number"
+  ) {
+    return null;
+  }
+  return {
+    best_bitstring: payload.best_bitstring,
+    best_objective: payload.best_objective,
+    quality_vs_classical: payload.quality_vs_classical
+  };
 }
 
 function ConnectionBadge({ connection }: { connection: UseRunStreamResult["connection"] }) {

@@ -1,6 +1,5 @@
 "use client";
 
-import { redirect } from "next/navigation";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -41,6 +40,13 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = "ApiError";
+  }
+}
+
+export class AuthRequiredError extends ApiError {
+  constructor(detail: unknown, retryAfter: string | null) {
+    super("Authentication required", 401, detail, retryAfter);
+    this.name = "AuthRequiredError";
   }
 }
 
@@ -93,7 +99,7 @@ export async function apiFetch<T>(
       ? parseRetryAfterSeconds(retryAfterHeader)
       : null;
     if (response.status === 401) {
-      redirect("/login");
+      throw new AuthRequiredError(payload, retryAfterHeader);
     }
     // Skip the toast for 404 here — pages render their own "not found" UI.
     if (response.status !== 404) {

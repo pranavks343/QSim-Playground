@@ -29,8 +29,14 @@ const QUALITY_THRESHOLD = 80;
 
 type Props = {
   classical: ClassicalResult | null;
-  simulation: SimulationResult | null;
+  simulation: SimulationPreview | null;
 };
+
+export type SimulationPreview = Pick<
+  SimulationResult,
+  "best_bitstring" | "best_objective" | "quality_vs_classical"
+> &
+  Partial<Pick<SimulationResult, "top_5_bitstrings" | "total_shots" | "runtime_ms">>;
 
 export function BenchmarkPanel({ classical, simulation }: Props) {
   const quality = simulation?.quality_vs_classical ?? null;
@@ -53,7 +59,7 @@ export function BenchmarkPanel({ classical, simulation }: Props) {
   }, [classical, quality]);
 
   const chartData = useMemo(() => {
-    if (!simulation) return [];
+    if (!simulation?.top_5_bitstrings) return [];
     return simulation.top_5_bitstrings.map(([bitstring, shots, objective]) => ({
       bitstring,
       shots,
@@ -114,7 +120,7 @@ export function BenchmarkPanel({ classical, simulation }: Props) {
                   <Badge>Quantum · Aer simulator</Badge>
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums">
-                  {simulation ? formatMs(simulation.runtime_ms) : "—"}
+                  {simulation?.runtime_ms !== undefined ? formatMs(simulation.runtime_ms) : "—"}
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums">
                   {simulation ? simulation.best_objective.toFixed(4) : "—"}
@@ -157,7 +163,8 @@ export function BenchmarkPanel({ classical, simulation }: Props) {
 
         {simulation ? (
           <p className="text-xs text-muted-foreground">
-            Total shots: {simulation.total_shots}. Best bitstring:{" "}
+            {simulation.total_shots !== undefined ? `Total shots: ${simulation.total_shots}. ` : ""}
+            Best bitstring:{" "}
             <span className="font-mono">{simulation.best_bitstring}</span>.
           </p>
         ) : null}

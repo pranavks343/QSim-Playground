@@ -23,6 +23,10 @@ def rls_users() -> Iterator[dict[str, TestUser]]:
 
     service = get_service_client()
     anon = get_anon_client()
+    try:
+        service.table("runs").select("id").limit(1).execute()
+    except Exception as exc:
+        pytest.skip(f"Supabase schema is not applied or reachable: {exc}")
     marker = uuid4().hex
     user_secret = f"QsimTest-{uuid4().hex}-42"
     emails = {
@@ -33,19 +37,22 @@ def rls_users() -> Iterator[dict[str, TestUser]]:
     try:
         users: dict[str, TestUser] = {}
         for label, email in emails.items():
-            response = service.auth.admin.create_user(
-                {
-                    "email": email,
-                    "password": user_secret,
-                    "email_confirm": True,
-                    "user_metadata": {"display_name": f"RLS User {label.upper()}"},
-                }
-            )
-            user_id = str(response.user.id)
-            created_user_ids.append(user_id)
-            session_response = anon.auth.sign_in_with_password(
-                {"email": email, "password": user_secret}
-            )
+            try:
+                response = service.auth.admin.create_user(
+                    {
+                        "email": email,
+                        "password": user_secret,
+                        "email_confirm": True,
+                        "user_metadata": {"display_name": f"RLS User {label.upper()}"},
+                    }
+                )
+                user_id = str(response.user.id)
+                created_user_ids.append(user_id)
+                session_response = anon.auth.sign_in_with_password(
+                    {"email": email, "password": user_secret}
+                )
+            except Exception as exc:
+                pytest.skip(f"Supabase is not reachable from this environment: {exc}")
             if session_response.session is None:
                 raise RuntimeError("Supabase did not return a session for test user")
             users[label] = {

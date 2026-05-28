@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-MIGRATION = Path(__file__).parents[1] / "infra" / "migrations" / "001_initial_schema.sql"
+MIGRATIONS = Path(__file__).parents[1] / "infra" / "migrations"
+MIGRATION = MIGRATIONS / "001_initial_schema.sql"
 
 
 def test_initial_schema_migration_contains_required_tables() -> None:
@@ -39,6 +40,13 @@ def test_initial_schema_migration_keeps_service_only_tables_client_unwritable() 
     assert "grant insert" not in _section_for_table(sql, "public.run_events")
     assert "grant insert" not in _section_for_table(sql, "public.exports")
     assert "grant" not in _section_for_table(sql, "public.rate_limit_log")
+
+
+def test_run_sharing_migration_is_idempotent_for_existing_databases() -> None:
+    sql = (MIGRATIONS / "002_add_run_sharing.sql").read_text(encoding="utf-8").lower()
+
+    assert "add column if not exists shared" in sql
+    assert "grant update (shared) on table public.runs to authenticated" in sql
 
 
 def _section_for_table(sql: str, table_name: str) -> str:
