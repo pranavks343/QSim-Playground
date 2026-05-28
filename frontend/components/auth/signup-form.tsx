@@ -21,6 +21,7 @@ type FieldErrors = Partial<Record<"email" | "password" | "form", string>>;
 export function SignupForm() {
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -37,11 +38,22 @@ export function SignupForm() {
     setErrors({});
     startTransition(async () => {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp(parsed.data);
+      const { data, error } = await supabase.auth.signUp({
+        ...parsed.data,
+        options:
+          typeof window === "undefined"
+            ? undefined
+            : { emailRedirectTo: `${window.location.origin}/dashboard` }
+      });
       if (error) {
         const message = normalizeSignupError(error.message);
         setErrors({ form: message });
         toast.error(message);
+        return;
+      }
+      if (data.session === null) {
+        setConfirmationEmail(parsed.data.email);
+        toast.success("Check your email to confirm your account.");
         return;
       }
       toast.success("Account created");
@@ -49,6 +61,24 @@ export function SignupForm() {
       router.refresh();
     });
   };
+
+  if (confirmationEmail !== null) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-md border bg-card p-4">
+          <h2 className="text-base font-semibold">Check your email to confirm</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We sent a confirmation link to{" "}
+            <span className="font-medium text-foreground">{confirmationEmail}</span>. Open it to
+            finish creating your QSim Playground account.
+          </p>
+        </div>
+        <Button variant="outline" className="w-full" asChild>
+          <Link href="/login">Back to login</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
