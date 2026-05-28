@@ -24,6 +24,7 @@ node_modules/
 out/
 frontend/dist/
 frontend/.turbo/
+frontend/tsconfig.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -33,6 +34,7 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+!.env.local.example
 *.pem
 *.key
 *.p12

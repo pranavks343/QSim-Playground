@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 ENV_FILE_PATTERN = re.compile(r"(^|/)\.env($|[.].+)")
-ALLOWLISTED_ENV_FILES = {".env.example"}
+ALLOWLISTED_ENV_FILES = {".env.example", ".env.local.example"}
 SECRET_PATTERNS = (
     re.compile(r"(?i)\b(api[_-]?key|secret|token|password)\b\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{16,}"),
     re.compile(r"AIza[0-9A-Za-z_-]{35}"),
