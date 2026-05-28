@@ -8,12 +8,14 @@ import { createClient } from "@/lib/supabase/client";
 import {
   createRunResponseSchema,
   parseValidateResponseSchema,
+  pipelineEventSchema,
   profileSchema,
   problemIRSchema,
   runSchema,
   templateMetadataSchema,
   type CreateRunResponse,
   type ParseValidateResponse,
+  type PipelineEvent,
   type Profile,
   type ProblemIR,
   type Run,
@@ -100,6 +102,23 @@ export async function getProfile(): Promise<Profile> {
 
 export async function getRun(runId: string): Promise<Run> {
   return apiFetch(`/api/runs/${runId}`, runSchema);
+}
+
+export const runEventsResponseSchema = z.object({
+  items: z.array(pipelineEventSchema)
+});
+
+export async function getRunEvents(
+  runId: string,
+  options: { afterEventId?: number } = {}
+): Promise<PipelineEvent[]> {
+  const params = new URLSearchParams();
+  if (options.afterEventId !== undefined) {
+    params.set("after_event_id", String(options.afterEventId));
+  }
+  const query = params.toString();
+  const path = query ? `/api/runs/${runId}/events?${query}` : `/api/runs/${runId}/events`;
+  return apiFetch(path, runEventsResponseSchema).then((result) => result.items);
 }
 
 export async function getRuns(limit = 10): Promise<Run[]> {

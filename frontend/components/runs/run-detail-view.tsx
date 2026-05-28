@@ -1,0 +1,126 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo } from "react";
+
+import { AgentCard } from "@/components/runs/agent-card";
+import { FailureCard } from "@/components/runs/failure-card";
+import { ProgressStepper } from "@/components/runs/progress-stepper";
+import { useRunStream, type UseRunStreamResult } from "@/components/runs/use-run-stream";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { deriveLiveState, AGENT_ORDER } from "@/lib/run-stream-state";
+import type { PipelineEvent, Run } from "@/lib/types";
+
+type Props = {
+  initialRun: Run;
+  initialEvents: PipelineEvent[];
+};
+
+export function RunDetailView({ initialRun, initialEvents }: Props) {
+  const stream = useRunStream({
+    runId: initialRun.id,
+    initialRun,
+    initialEvents
+  });
+  return <RunDetailContent stream={stream} />;
+}
+
+function RunDetailContent({ stream }: { stream: UseRunStreamResult }) {
+  const { run, events, connection } = stream;
+  const live = useMemo(() => deriveLiveState(events), [events]);
+
+  const winnerAgent = live.criticVerdict?.winner_agent ?? run.winner_agent ?? null;
+  const showFailure = live.terminal === "failed" || live.terminal === "cancelled";
+  const failureKind = live.terminal === "cancelled" ? "cancelled" : "failed";
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Link href="/dashboard" className="underline-offset-2 hover:underline">
+              Dashboard
+            </Link>
+            <span>›</span>
+            <span>Run {run.id.slice(0, 8)}</span>
+          </div>
+          <h1 className="mt-1 text-2xl font-semibold">
+            {run.template ?? run.problem_ir.name}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {run.problem_ir.variables.length} variable
+            {run.problem_ir.variables.length === 1 ? "" : "s"} ·{" "}
+            {run.problem_ir.constraints?.length ?? 0} constraint
+            {(run.problem_ir.constraints?.length ?? 0) === 1 ? "" : "s"} · created{" "}
+            {new Date(run.created_at).toLocaleString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ConnectionBadge connection={connection} />
+          <StatusBadge status={run.status} />
+        </div>
+      </header>
+
+      <ProgressStepper stages={live.stages} />
+
+      {showFailure ? (
+        <FailureCard run={run} terminal={failureKind} reason={live.failureReason} />
+      ) : null}
+
+      <section aria-label="Agent formulations" className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold">Agents</h2>
+          <p className="text-xs text-muted-foreground">
+            Five specialists race to formulate the QUBO. Cards animate as each finishes.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {AGENT_ORDER.map((name) => {
+            const summary = live.agents[name];
+            const qubo = run.qubos?.[name] ?? null;
+            return (
+              <AgentCard
+                key={name}
+                agent={summary}
+                qubo={qubo}
+                isWinner={winnerAgent === name}
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      {!showFailure ? (
+        <Card className="border-dashed">
+          <CardContent className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Streaming live updates… scorecards, critic verdict, and benchmarks appear as the pipeline progresses.
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+function ConnectionBadge({ connection }: { connection: UseRunStreamResult["connection"] }) {
+  const label =
+    connection === "live"
+      ? "Live"
+      : connection === "polling"
+        ? "Polling"
+        : connection === "connecting"
+          ? "Connecting…"
+          : "Closed";
+  const variant: "default" | "secondary" | "outline" =
+    connection === "live" ? "default" : connection === "polling" ? "secondary" : "outline";
+  return (
+    <Badge variant={variant} className="font-mono text-[10px] uppercase tracking-wider">
+      {label}
+    </Badge>
+  );
+}
