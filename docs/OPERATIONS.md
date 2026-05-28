@@ -207,3 +207,68 @@ With `--min-instances 0`, the first request after an idle period may
 take roughly 3-5 seconds. This is expected and is the cost trade-off
 for Rs 0 idle infrastructure. The frontend should surface this as a
 warming state, not as an outage.
+
+## Vercel Frontend Deployment
+
+The frontend deploys from the same GitHub repository with Vercel's
+Next.js preset.
+
+### Import Project
+
+1. Open Vercel -> Add New Project -> Import Git Repository.
+2. Select `pranavks343/QSim-Playground`.
+3. Set Root Directory to `frontend/`.
+4. Keep the detected Next.js framework preset and default build/output
+   settings.
+
+### Environment Variables
+
+Set these for both Production and Preview environments:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_API_URL` set to the Cloud Run HTTPS URL from Block A
+
+Deploy to production and note the assigned URL, for example
+`https://qsim-playground.vercel.app`.
+
+### Close the CORS Loop
+
+After Vercel assigns the production URL, update Cloud Run so the backend
+accepts browser requests from that exact origin:
+
+```bash
+gcloud run services update qsim-backend \
+  --region asia-south1 \
+  --set-env-vars ALLOWED_ORIGINS=https://qsim-playground.vercel.app
+```
+
+If a custom domain is added later, include it in `ALLOWED_ORIGINS` as a
+comma-separated value and redeploy/update the service again.
+
+### Supabase Auth URLs
+
+In Supabase -> Authentication -> URL Configuration:
+
+- Site URL: `https://qsim-playground.vercel.app`
+- Redirect URLs: add `https://qsim-playground.vercel.app/**`
+
+For production launch, re-enable email confirmation in Supabase
+Authentication -> Providers -> Email.
+
+### Vercel Analytics
+
+Vercel Analytics is mounted in the Next.js root layout through
+`@vercel/analytics/next`. Enable Analytics in the Vercel project
+dashboard to start collecting page-level traffic.
+
+### Production Smoke Test
+
+Verify:
+
+- Landing page loads over HTTPS.
+- Signup creates both an `auth.users` row and a `users_profile` row.
+- A template run created from the live frontend calls the Cloud Run
+  backend and reaches `status="done"`.
+- The first slow request after an idle backend shows the non-blocking
+  "Warming up the backend..." toast and clears when the response arrives.

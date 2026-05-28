@@ -30,6 +30,10 @@ import {
 } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const WARMING_TOAST_DELAY_MS = 2000;
+
+let hasUsedWarmingToast = false;
+let warmingToastId: string | number | undefined;
 
 export class ApiError extends Error {
   constructor(
@@ -73,6 +77,7 @@ export async function apiFetch<T>(
   }
 
   let response: Response;
+  const warmingTimer = startWarmingToastTimer();
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
@@ -80,6 +85,7 @@ export async function apiFetch<T>(
       body: options.body === undefined ? undefined : JSON.stringify(options.body)
     });
   } catch (err) {
+    clearWarmingToast(warmingTimer);
     const toastInfo = describeApiError(null, null, null);
     toast.error(toastInfo.title, { description: toastInfo.description });
     throw new ApiError(
@@ -89,6 +95,7 @@ export async function apiFetch<T>(
       null
     );
   }
+  clearWarmingToast(warmingTimer);
 
   const text = await response.text();
   const payload: unknown = text ? safeJsonParse(text) : null;
@@ -115,6 +122,28 @@ export async function apiFetch<T>(
   }
 
   return schema.parse(payload);
+}
+
+function startWarmingToastTimer(): ReturnType<typeof setTimeout> | null {
+  if (hasUsedWarmingToast || typeof window === "undefined") {
+    return null;
+  }
+  hasUsedWarmingToast = true;
+  return setTimeout(() => {
+    warmingToastId = toast.loading("Warming up the backend...", {
+      description: "Cloud Run may need a few seconds after being idle."
+    });
+  }, WARMING_TOAST_DELAY_MS);
+}
+
+function clearWarmingToast(timer: ReturnType<typeof setTimeout> | null): void {
+  if (timer !== null) {
+    clearTimeout(timer);
+  }
+  if (warmingToastId !== undefined) {
+    toast.dismiss(warmingToastId);
+    warmingToastId = undefined;
+  }
 }
 
 function safeJsonParse(text: string): unknown {
