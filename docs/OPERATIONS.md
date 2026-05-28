@@ -117,3 +117,93 @@ The script provisions throwaway accounts via the service-role admin API
 and deletes them on completion. If a cleanup line prints
 `cleanup_failed`, manually delete the listed `user_id` from Supabase
 Auth.
+
+## Cloud Run Backend Deployment
+
+The production backend runs on Google Cloud Run in Mumbai
+(`asia-south1`) and scales to zero when idle.
+
+### One-Time GCP Setup
+
+```bash
+gcloud auth login
+gcloud projects create qsim-playground-prod --name="QSim Playground"
+gcloud config set project qsim-playground-prod
+```
+
+Attach a billing account before deploying. Cloud Run has a free tier,
+but Google still requires billing to be enabled. Create a budget alert
+at Rs 100 before the first deploy.
+
+Enable required APIs:
+
+```bash
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  secretmanager.googleapis.com
+```
+
+Create Secret Manager entries for:
+
+- `GEMINI_API_KEYS`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_JWT_SECRET`
+- `SENTRY_DSN`
+
+Grant the Cloud Run runtime service account
+`roles/secretmanager.secretAccessor`.
+
+### Local Container Smoke Test
+
+```bash
+docker build -t qsim-backend ./backend
+docker run --rm -p 8080:8080 --env-file backend/.env qsim-backend
+curl http://localhost:8080/api/health
+```
+
+Expected result: HTTP 200 with `status`, `db_reachable`,
+`gemini_reachable`, and `version` fields.
+
+### Deploy
+
+From the repository root:
+
+```bash
+PROJECT_ID=qsim-playground-prod \
+FRONTEND_ORIGIN=https://qsim-playground.vercel.app \
+bash backend/scripts/deploy_cloud_run.sh
+```
+
+The script deploys `qsim-backend` with:
+
+- `--region asia-south1`
+- `--min-instances 0`
+- `--max-instances 10`
+- `--concurrency 20`
+- `--timeout 300`
+- secrets loaded from Secret Manager
+
+After deploy, note the Cloud Run URL and verify:
+
+```bash
+curl https://<cloud-run-url>/api/health
+```
+
+### Monitoring Alerts
+
+Configure Cloud Monitoring alerts to email the maintainer when:
+
+- 5xx rate is greater than 5% over 5 minutes
+- memory utilization is greater than 90% or any instance OOMs
+- request latency p95 is greater than 30 seconds
+
+### Cold Starts
+
+With `--min-instances 0`, the first request after an idle period may
+take roughly 3-5 seconds. This is expected and is the cost trade-off
+for Rs 0 idle infrastructure. The frontend should surface this as a
+warming state, not as an outage.

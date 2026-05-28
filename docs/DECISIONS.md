@@ -122,3 +122,30 @@ the dev URL and a guessed-but-valid email format can create an
 account. That is acceptable because the dev project is unpublished and
 behind unguessable Supabase project URLs; production has none of that
 slack and must require confirmation.
+
+## ADR-005: Cloud Run Scale-to-Zero Backend
+
+Status: accepted
+
+The production FastAPI backend deploys to Google Cloud Run in Mumbai
+(`asia-south1`) with `--min-instances 0`. This keeps idle cost at Rs 0
+inside the Cloud Run free-tier envelope while still giving the API a
+public HTTPS URL, autoscaling, request timeouts, and managed container
+startup.
+
+The trade-off is cold start latency. The first request after an idle
+period can take several seconds while Cloud Run starts a container,
+imports Qiskit/LangGraph dependencies, and initializes the FastAPI app.
+The frontend should treat this as an expected state and show a
+"Warming up..." message on the first API request of a session instead
+of reporting it as a failure.
+
+Operational guardrails:
+
+- Runtime is capped to `--memory 1Gi`, `--cpu 1`, `--max-instances 10`,
+  `--concurrency 20`, and `--timeout 300`.
+- Secrets are mounted from Google Secret Manager, not passed in deploy
+  commands or committed files.
+- A billing account is required by Cloud Run even when usage stays
+  inside the free tier; a Rs 100 budget alert is required before launch.
+- Monitoring alerts cover 5xx rate, p95 latency, and memory/OOM risk.
