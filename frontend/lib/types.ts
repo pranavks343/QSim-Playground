@@ -160,6 +160,23 @@ export const profileSchema = z.object({
   quota_resets_at: z.string().nullable().optional()
 });
 
+export const createRunResponseSchema = z.object({
+  run_id: z.string().uuid(),
+  status: z.literal("queued")
+});
+
+export const parseErrorSchema = z.object({
+  message: z.string(),
+  line: z.number().int().nullable().optional(),
+  column: z.number().int().nullable().optional()
+});
+
+export const parseValidateResponseSchema = z.object({
+  ok: z.boolean(),
+  ir: problemIRSchema.nullable().optional(),
+  errors: z.array(parseErrorSchema)
+});
+
 export type ProblemIR = z.infer<typeof problemIRSchema>;
 export type QUBOOutput = z.infer<typeof quboOutputSchema>;
 export type Scorecard = z.infer<typeof scorecardSchema>;
@@ -173,3 +190,5 @@ export type PipelineEvent = z.infer<typeof pipelineEventSchema>;
 export type Run = z.infer<typeof runSchema>;
 export type TemplateMetadata = z.infer<typeof templateMetadataSchema>;
 export type Profile = z.infer<typeof profileSchema>;
+export type CreateRunResponse = z.infer<typeof createRunResponseSchema>;
+export type ParseValidateResponse = z.infer<typeof parseValidateResponseSchema>;

@@ -144,6 +144,34 @@ class TemplatesResponse(BaseModel):
     items: list[TemplateMetadata]
 
 
+class ParseValidateRequest(BaseModel):
+    """Request body for lightweight source-code parsing."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_code: str
+
+
+class ParseErrorResponse(BaseModel):
+    """Single parse error payload."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str
+    line: int | None = None
+    column: int | None = None
+
+
+class ParseValidateResponse(BaseModel):
+    """Result of validating source code into IR."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ok: bool
+    ir: dict[str, Any] | None = None
+    errors: list[ParseErrorResponse] = []
+
+
 def ir_to_json_dict(ir: ProblemIR) -> dict[str, Any]:
     """Return a JSON-safe IR dictionary."""
 

@@ -6,10 +6,16 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/client";
 import {
+  createRunResponseSchema,
+  parseValidateResponseSchema,
   profileSchema,
+  problemIRSchema,
   runSchema,
   templateMetadataSchema,
+  type CreateRunResponse,
+  type ParseValidateResponse,
   type Profile,
+  type ProblemIR,
   type Run,
   type TemplateMetadata
 } from "@/lib/types";
@@ -94,4 +100,36 @@ export async function getProfile(): Promise<Profile> {
 
 export async function getRun(runId: string): Promise<Run> {
   return apiFetch(`/api/runs/${runId}`, runSchema);
+}
+
+export async function getRuns(limit = 10): Promise<Run[]> {
+  return apiFetch(`/api/runs?limit=${limit}`, runListSchema).then((result) => result.items);
+}
+
+export async function createTemplateRun(templateName: string): Promise<CreateRunResponse> {
+  return apiFetch("/api/runs", createRunResponseSchema, {
+    method: "POST",
+    body: { input_source: "template", template_name: templateName }
+  });
+}
+
+export async function createCodeRun(sourceCode: string): Promise<CreateRunResponse> {
+  return apiFetch("/api/runs", createRunResponseSchema, {
+    method: "POST",
+    body: { input_source: "code", source_code: sourceCode }
+  });
+}
+
+export async function createIrRun(problemIr: ProblemIR): Promise<CreateRunResponse> {
+  return apiFetch("/api/runs", createRunResponseSchema, {
+    method: "POST",
+    body: { input_source: "ir", problem_ir: problemIRSchema.parse(problemIr) }
+  });
+}
+
+export async function validateSourceCode(sourceCode: string): Promise<ParseValidateResponse> {
+  return apiFetch("/api/parse/validate", parseValidateResponseSchema, {
+    method: "POST",
+    body: { source_code: sourceCode }
+  });
 }

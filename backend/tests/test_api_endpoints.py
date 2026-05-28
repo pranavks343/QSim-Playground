@@ -393,3 +393,33 @@ def test_templates_public_success() -> None:
         "max_cut",
         "knapsack",
     }
+
+
+def test_parse_validate_success() -> None:
+    source = """
+import numpy as np
+x = np.array([0, 1, 0])
+c = np.array([1, 2, 3])
+objective = c @ x
+maximize(objective)
+constraint = np.sum(x) == 1
+"""
+    response = TestClient(create_app()).post(
+        "/api/parse/validate",
+        json={"source_code": source},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert response.json()["ir"]["name"]
+
+
+def test_parse_validate_failure() -> None:
+    response = TestClient(create_app()).post(
+        "/api/parse/validate",
+        json={"source_code": ""},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ok"] is False
+    assert response.json()["errors"]

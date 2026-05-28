@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from starlette import status
 
 from api.middleware import AuthContextMiddleware, LoggingMiddleware, RequestIDMiddleware
-from api.routes import auth, health, profile, runs, templates
+from api.routes import auth, health, parse, profile, runs, templates
 from infra.settings import Settings
 
 logger = structlog.get_logger(__name__)
@@ -79,6 +79,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(profile.router)
     app.include_router(runs.router)
+    app.include_router(parse.router)
     app.include_router(templates.router)
 
 
