@@ -15,7 +15,12 @@ export default function DashboardPage() {
             <CardDescription>Latest QUBO formulation pipelines.</CardDescription>
           </div>
           <Button asChild>
-            <Link href="/new">Start a new run</Link>
+            <Link href="/new">
+              Start a new run
+              <kbd className="ml-2 hidden rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground md:inline">
+                n
+              </kbd>
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -27,8 +32,13 @@ export default function DashboardPage() {
           <CardTitle>Quota</CardTitle>
           <CardDescription>Free tier monthly run budget</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <QuotaBar />
+          <p className="text-xs text-muted-foreground">
+            Press{" "}
+            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px]">?</kbd>{" "}
+            anywhere for keyboard shortcuts.
+          </p>
         </CardContent>
       </Card>
     </div>

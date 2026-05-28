@@ -1,7 +1,7 @@
 "use client";
 
-import Editor from "@monaco-editor/react";
 import { AlertCircle, Play } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -23,6 +23,13 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const Editor = dynamic(() => import("@monaco-editor/react").then((mod) => mod.default), {
+  ssr: false,
+  loading: () => (
+    <Skeleton className="h-72 w-full" aria-label="Loading code editor" />
+  )
+});
 
 const starterCode = `import numpy as np
 

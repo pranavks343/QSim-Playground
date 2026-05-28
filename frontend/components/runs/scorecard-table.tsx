@@ -144,44 +144,55 @@ export function ScorecardTable({ scorecards, winnerAgent, runnerUpAgent }: Props
       </CardHeader>
       <CardContent>
         <TooltipProvider>
-          <div className="overflow-x-auto">
+          <div className="-mx-2 overflow-x-auto px-2">
             <Table>
               <TableHeader>
                 <TableRow>
-                  {COLUMNS.map((column) => (
-                    <TableHead
-                      key={column.key}
-                      className={cn(
-                        "select-none",
-                        column.align === "right" && "text-right"
-                      )}
-                    >
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => handleSort(column.key)}
-                            className={cn(
-                              "flex w-full items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground",
-                              column.align === "right" && "justify-end"
-                            )}
-                          >
-                            {column.label}
-                            {sortKey === column.key ? (
-                              direction === "asc" ? (
-                                <ArrowUp className="h-3 w-3" />
-                              ) : (
-                                <ArrowDown className="h-3 w-3" />
-                              )
-                            ) : null}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs text-xs">
-                          {column.tooltip}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TableHead>
-                  ))}
+                  {COLUMNS.map((column, index) => {
+                    const isSorted = sortKey === column.key;
+                    const ariaSort = isSorted
+                      ? direction === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none";
+                    return (
+                      <TableHead
+                        key={column.key}
+                        aria-sort={ariaSort}
+                        className={cn(
+                          "select-none",
+                          column.align === "right" && "text-right",
+                          index === 0 && "sticky left-0 z-10 bg-card"
+                        )}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => handleSort(column.key)}
+                              aria-label={`Sort by ${column.label.toLowerCase()}`}
+                              className={cn(
+                                "flex w-full items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded-sm",
+                                column.align === "right" && "justify-end"
+                              )}
+                            >
+                              {column.label}
+                              {isSorted ? (
+                                direction === "asc" ? (
+                                  <ArrowUp className="h-3 w-3" aria-hidden />
+                                ) : (
+                                  <ArrowDown className="h-3 w-3" aria-hidden />
+                                )
+                              ) : null}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs text-xs">
+                            {column.tooltip}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -197,11 +208,16 @@ export function ScorecardTable({ scorecards, winnerAgent, runnerUpAgent }: Props
                         !isWinner && isRunnerUp && "bg-muted/40"
                       )}
                     >
-                      {COLUMNS.map((column) => (
+                      {COLUMNS.map((column, index) => (
                         <TableCell
                           key={column.key}
                           className={cn(
-                            column.align === "right" && "text-right font-mono tabular-nums"
+                            column.align === "right" && "text-right font-mono tabular-nums",
+                            index === 0 &&
+                              cn(
+                                "sticky left-0 z-10",
+                                isWinner ? "bg-success/10" : isRunnerUp ? "bg-muted/40" : "bg-card"
+                              )
                           )}
                         >
                           {column.format(scorecard)}

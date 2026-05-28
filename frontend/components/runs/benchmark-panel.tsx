@@ -1,11 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -16,6 +17,13 @@ import {
 } from "@/components/ui/table";
 import type { ClassicalResult, SimulationResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const BenchmarkChart = dynamic(() => import("./benchmark-chart"), {
+  ssr: false,
+  loading: () => (
+    <Skeleton className="h-full w-full" aria-label="Loading bitstring chart" />
+  )
+});
 
 const QUALITY_THRESHOLD = 80;
 
@@ -142,25 +150,7 @@ export function BenchmarkPanel({ classical, simulation }: Props) {
               shown in the table label.
             </p>
             <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 24, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                  <XAxis
-                    dataKey="bitstring"
-                    tick={{ fontSize: 11, fontFamily: "monospace" }}
-                    interval={0}
-                    angle={-15}
-                    dy={8}
-                  />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip
-                    cursor={{ fillOpacity: 0.1 }}
-                    formatter={(value) => [`${String(value)} shots`, "Count"]}
-                    labelFormatter={(label) => `Bitstring ${String(label)}`}
-                  />
-                  <Bar dataKey="shots" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <BenchmarkChart data={chartData} />
             </div>
           </div>
         ) : null}

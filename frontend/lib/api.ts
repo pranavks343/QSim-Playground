@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { describeApiError, parseRetryAfterSeconds } from "@/lib/error-state";
 import { createClient } from "@/lib/supabase/client";
 import {
   createRunResponseSchema,
@@ -65,29 +66,57 @@ export async function apiFetch<T>(
     headers.set("Authorization", `Bearer ${session.access_token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body)
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body)
+    });
+  } catch (err) {
+    const toastInfo = describeApiError(null, null, null);
+    toast.error(toastInfo.title, { description: toastInfo.description });
+    throw new ApiError(
+      err instanceof Error ? err.message : "Network error",
+      0,
+      null,
+      null
+    );
+  }
 
   const text = await response.text();
-  const payload: unknown = text ? JSON.parse(text) : null;
+  const payload: unknown = text ? safeJsonParse(text) : null;
 
   if (!response.ok) {
-    const retryAfter = response.headers.get("retry-after");
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterSeconds = retryAfterHeader
+      ? parseRetryAfterSeconds(retryAfterHeader)
+      : null;
     if (response.status === 401) {
       redirect("/login");
     }
-    if (response.status === 429) {
-      toast.error("Run limit reached", {
-        description: retryAfter ? `Retry after ${retryAfter}s.` : "Try again later."
-      });
+    // Skip the toast for 404 here — pages render their own "not found" UI.
+    if (response.status !== 404) {
+      const toastInfo = describeApiError(response.status, retryAfterSeconds, payload);
+      toast.error(toastInfo.title, { description: toastInfo.description });
     }
-    throw new ApiError("API request failed", response.status, payload, retryAfter);
+    throw new ApiError(
+      "API request failed",
+      response.status,
+      payload,
+      retryAfterHeader
+    );
   }
 
   return schema.parse(payload);
+}
+
+function safeJsonParse(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
 }
 
 export const runListSchema = z.object({

@@ -110,7 +110,9 @@ export function AgentCard({ agent, qubo, isWinner }: Props) {
                   <button
                     type="button"
                     onClick={() => setExpanded((value) => !value)}
-                    className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                    aria-expanded={expanded}
+                    aria-label={`${expanded ? "Collapse" : "Expand"} ${AGENT_LABELS[agent.name]} justification`}
+                    className="rounded-sm text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     {expanded ? "Show less" : "Read full reasoning"}
                   </button>

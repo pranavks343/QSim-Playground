@@ -33,8 +33,19 @@ export function RecentRuns() {
   }
   if (runs.length === 0) {
     return (
-      <div className="rounded-md border p-6 text-sm text-muted-foreground">
-        No runs yet. <Button asChild variant="link"><Link href="/new">Start a new run</Link></Button>
+      <div className="rounded-md border border-dashed p-6 text-sm">
+        <p className="font-medium">No runs yet</p>
+        <p className="mt-1 text-muted-foreground">
+          Pick a template or paste an IR snippet and we&apos;ll run the multi-agent pipeline.
+        </p>
+        <Button asChild className="mt-3">
+          <Link href="/new">
+            Start your first run
+            <kbd className="ml-2 hidden rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground md:inline">
+              n
+            </kbd>
+          </Link>
+        </Button>
       </div>
     );
   }
