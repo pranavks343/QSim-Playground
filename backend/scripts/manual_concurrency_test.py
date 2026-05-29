@@ -104,6 +104,7 @@ async def main() -> int:
                     for index in range(args.clients)
                 ]
             )
+            await _verify_list_isolation(http_client, reports, credentials)
             overall_elapsed = time.perf_counter() - overall_started
     finally:
         for user_id in created_user_ids:
@@ -203,6 +204,39 @@ async def _run_client(
     for error in report.errors:
         print(f"  {label} error: {error}")
     return report
+
+
+async def _verify_list_isolation(
+    http_client: httpx.AsyncClient,
+    reports: list[ClientReport],
+    credentials: list[dict[str, str]],
+) -> None:
+    """Confirm each synthetic user's run list contains only their own runs."""
+
+    expected_by_user = {report.user_id: set(report.run_ids) for report in reports}
+    all_run_ids = set().union(*(set(report.run_ids) for report in reports))
+
+    for credential in credentials:
+        headers = {"Authorization": f"Bearer {credential['access_token']}"}
+        response = await http_client.get("/api/runs?limit=100", headers=headers)
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"list isolation check failed for {credential['user_id']}: "
+                f"status={response.status_code} body={response.text}"
+            )
+        visible_ids = {str(item["id"]) for item in response.json().get("items", [])}
+        own_ids = expected_by_user[credential["user_id"]]
+        leaked_ids = visible_ids.intersection(all_run_ids - own_ids)
+        missing_ids = own_ids - visible_ids
+        if leaked_ids:
+            raise RuntimeError(
+                f"list isolation leak for {credential['user_id']}: {sorted(leaked_ids)}"
+            )
+        if missing_ids:
+            raise RuntimeError(
+                f"list isolation missing own runs for {credential['user_id']}: "
+                f"{sorted(missing_ids)}"
+            )
 
 
 async def _poll_until_terminal(

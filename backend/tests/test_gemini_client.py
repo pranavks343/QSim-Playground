@@ -5,7 +5,12 @@ from dataclasses import dataclass
 import pytest
 from pydantic import BaseModel
 
-from infra.gemini import GeminiClient, GeminiQuotaExhausted, GeminiResponse
+from infra.gemini import (
+    GeminiClient,
+    GeminiQuotaExhausted,
+    GeminiResponse,
+    reset_gemini_circuit_breaker,
+)
 
 
 class SimpleSchema(BaseModel):
@@ -49,6 +54,11 @@ class FakeTransport:
 
 async def no_sleep(delay: float) -> None:
     del delay
+
+
+@pytest.fixture(autouse=True)
+def reset_breaker_state() -> None:
+    reset_gemini_circuit_breaker()
 
 
 @pytest.mark.asyncio

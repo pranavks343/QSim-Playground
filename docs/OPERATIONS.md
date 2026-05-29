@@ -96,13 +96,15 @@ cd backend
 python scripts/manual_concurrency_test.py \
     --clients 4 \
     --runs-per-client 3 \
-    --base-url https://api.qsim-playground.com
+    --base-url https://<cloud-run-url>
 ```
 
 What to look for in the output:
 
 - All N × runs-per-client runs print `status=done`
 - Each `client-N` line shows a unique `user_id`
+- The script exits only after each synthetic user's `/api/runs` list is
+  checked for missing own runs and leaked cross-user runs
 - Total `Wall-clock elapsed` is well under `90s` for `N=4, runs=3`
 - The exit code is `0` (any non-`done` or `--base-url` error sets it to `1`)
 
@@ -117,6 +119,93 @@ The script provisions throwaway accounts via the service-role admin API
 and deletes them on completion. If a cleanup line prints
 `cleanup_failed`, manually delete the listed `user_id` from Supabase
 Auth.
+
+### Production 4-User Browser Stress Test
+
+Run this after the Vercel and Cloud Run URLs are live.
+
+1. Open four sessions: normal desktop browser, incognito/private
+   desktop browser, another desktop browser, and mobile Safari on a
+   phone.
+2. Sign up four real test accounts and confirm each email.
+3. Start one template run in each session at roughly the same time.
+4. Confirm each trace screen updates independently. Realtime should
+   deliver events; polling fallback is acceptable if a browser blocks
+   WebSockets.
+5. Confirm each dashboard lists only that user's own runs.
+6. In Cloud Monitoring, watch Cloud Run instance count rise during the
+   burst and drift back down after traffic stops.
+7. In Cloud Run logs, filter for `gemini_call` and confirm key rotation
+   is working. Occasional cooldowns are acceptable; sustained 429s or
+   `GeminiCircuitOpen` during normal four-user load means more Gemini
+   keys are needed before launch.
+8. In Supabase Realtime logs/table view, confirm `run_events` rows are
+   being written for all four run IDs.
+
+### Production Limit And Abuse Verification
+
+Use a disposable production test account.
+
+Rate limit:
+
+1. Fire six `POST /api/runs` requests in under 60 seconds.
+2. The first five should be accepted for the free tier.
+3. The sixth must return HTTP 429 with a `Retry-After` header and the
+   frontend should show the rate-limit toast.
+
+Quota:
+
+1. In Supabase, set the test user's `monthly_runs_used` to `49`.
+2. Create one run: it should be accepted.
+3. Create the next run: it should return the quota-exceeded UI and HTTP
+   429.
+4. Reset/delete the test user after verification.
+
+Qubit cap:
+
+1. Submit a hand-built IR with 25 binary variables.
+2. The pipeline must fail gracefully with a clear tier-cap message,
+   not crash the API worker.
+3. The run detail page should recover that failure from `run_events`
+   after reload.
+
+Abuse paths:
+
+- Paste malformed NumPy and confirm a line-numbered parse error.
+- Paste code containing `os.system(...)` and confirm it is parsed via
+  AST only; no side effect should occur.
+- Submit empty or garbage IR and confirm HTTP 422 with useful details.
+- Close a tab mid-run, reopen `/runs/<id>`, and confirm state recovers
+  from persisted events.
+
+Circuit breaker:
+
+- Review `backend/infra/gemini.py` before launch. The breaker opens
+  after more than 10 Gemini quota/rate-limit errors inside 60 seconds
+  and blocks new run creation while cooling down.
+- Confirm production logs expose `gemini_call`, `cooling_down=true`,
+  and `GeminiCircuitOpen` events if quota pressure occurs.
+
+### Free-Tier Capacity Ceiling
+
+The binding free-tier constraint is Gemini, not Cloud Run or Supabase.
+
+Approximate launch envelope:
+
+- Cloud Run free tier can handle far more API requests than this launch
+  path should generate; with `--min-instances 0`, idle cost remains
+  zero.
+- Supabase's free tier is enough for the launch target if MAU stays
+  below the free-plan ceiling and `run_events` retention remains short.
+- Gemini is the binding constraint because each full run uses multiple
+  LLM calls: five formulation agents plus critic/refiner, with possible
+  retries. Budget roughly seven to nine Gemini calls per run.
+
+With rotated Gemini keys, treat about 1,500 runs/day as the optimistic
+upper bound for the zero-cost launch. If logs show sustained 429s,
+`cooling_down=true` across keys, or the circuit breaker opening during
+normal usage, add more free keys only if it complies with Gemini terms;
+otherwise move Gemini usage to a paid quota before broad launch.
 
 ## Cloud Run Backend Deployment
 
