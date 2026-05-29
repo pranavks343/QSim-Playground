@@ -82,6 +82,29 @@ def test_cors_headers_present_for_whitelisted_origin() -> None:
     assert response.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
 
 
+def test_debug_boom_route_is_disabled_by_default(monkeypatch: MonkeyPatch) -> None:
+    _configure_settings_env(monkeypatch)
+    get_settings.cache_clear()
+    client = TestClient(create_app(), raise_server_exceptions=False)
+
+    response = client.get("/api/debug/boom")
+
+    assert response.status_code == 404
+
+
+def test_debug_boom_route_can_be_explicitly_enabled(monkeypatch: MonkeyPatch) -> None:
+    _configure_settings_env(monkeypatch)
+    monkeypatch.setenv("ENABLE_DEBUG_ROUTES", "true")
+    get_settings.cache_clear()
+    client = TestClient(create_app(), raise_server_exceptions=False)
+
+    response = client.get("/api/debug/boom")
+
+    assert response.status_code == 500
+    assert response.headers["X-Request-ID"]
+    assert response.json()["request_id"] == response.headers["X-Request-ID"]
+
+
 def _configure_settings_env(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEYS", "gemini-key-for-tests")
     monkeypatch.setenv("SUPABASE_URL", "https://qsim-test.supabase.co")
@@ -90,6 +113,7 @@ def _configure_settings_env(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("SUPABASE_JWT_SECRET", "jwt-secret-for-tests-with-enough-entropy")
     monkeypatch.setenv("SENTRY_DSN", "")
     monkeypatch.setenv("ALLOWED_ORIGINS", "http://localhost:3000")
+    monkeypatch.setenv("ENABLE_DEBUG_ROUTES", "false")
 
 
 def _jwt_like_value(prefix: str) -> str:

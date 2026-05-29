@@ -207,6 +207,99 @@ upper bound for the zero-cost launch. If logs show sustained 429s,
 normal usage, add more free keys only if it complies with Gemini terms;
 otherwise move Gemini usage to a paid quota before broad launch.
 
+## Observability And Status Page
+
+### Sentry
+
+Backend Sentry is initialized from `SENTRY_DSN` in Cloud Run. Frontend
+Sentry is initialized from `NEXT_PUBLIC_SENTRY_DSN` in Vercel, with
+server-side Next.js capture using `SENTRY_DSN` when available.
+
+Production smoke test:
+
+1. Temporarily enable the backend debug route:
+
+```bash
+gcloud run services update qsim-backend \
+  --region asia-south1 \
+  --set-env-vars ENABLE_DEBUG_ROUTES=true
+```
+
+2. Hit `https://<cloud-run-url>/api/debug/boom`.
+3. Confirm a backend issue lands in Sentry with stack trace and the
+   response includes an `X-Request-ID` header.
+4. Immediately disable the route:
+
+```bash
+gcloud run services update qsim-backend \
+  --region asia-south1 \
+  --set-env-vars ENABLE_DEBUG_ROUTES=false
+```
+
+5. In the browser console on the production frontend, trigger a test
+   client error after confirming `NEXT_PUBLIC_SENTRY_DSN` is set:
+
+```js
+setTimeout(() => {
+  throw new Error("QSim frontend Sentry smoke test");
+}, 0);
+```
+
+6. Confirm the frontend issue lands in Sentry.
+
+Sentry alerting:
+
+- Configure an email alert for new issue types.
+- Keep the free-tier budget in mind: 5K errors/month. If noisy client
+  errors appear, fix or filter them before launch.
+- Do not leave `ENABLE_DEBUG_ROUTES=true` after testing.
+
+### Public Status Page
+
+Use BetterStack/Better Uptime or UptimeRobot free tier.
+
+Create monitors:
+
+- Backend health: `https://<cloud-run-url>/api/health`, every 5 minutes.
+- Frontend: `https://<vercel-url>`, every 5 minutes.
+
+Create a public status page and add both monitors. Configure downtime
+alerts to email `kondapisripranav@gmail.com`. SMS is optional if the
+free tier allows it.
+
+### Traffic Analytics
+
+Vercel Analytics is mounted in the app through
+`@vercel/analytics/next`. In Vercel, open Project -> Analytics and
+confirm page views appear after visiting the production landing page.
+Use Vercel Analytics as the default launch analytics unless a separate
+Plausible trial is explicitly started.
+
+### Log Review Habit
+
+Bookmark:
+
+- Cloud Run logs filtered to `severity>=WARNING` for `qsim-backend`.
+- Supabase logs for Auth, Realtime, and Postgres API errors.
+- Sentry Issues sorted by first seen/new issue.
+
+Healthy patterns:
+
+- `http_request` logs with 2xx/4xx status codes and request IDs.
+- Occasional `gemini_call` warnings during transient retries.
+- Realtime `run_events` inserts for active runs.
+- Rate-limit and quota 429s only during deliberate limit testing.
+
+Unhealthy patterns:
+
+- Repeated `execution_pipeline_unhandled_exception`.
+- Sustained `gemini_call` with `cooling_down=true` across all keys.
+- `GeminiCircuitOpen` during ordinary traffic.
+- `execution_event_insert_failed`, which means trace screens may stop
+  updating.
+- 5xx rate over 5% for 5 minutes.
+- p95 API latency above 30 seconds outside cold starts.
+
 ## Cloud Run Backend Deployment
 
 The production backend runs on Google Cloud Run in Mumbai

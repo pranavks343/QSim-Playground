@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = Field(default="", alias="SUPABASE_JWT_SECRET")
     sentry_dsn: str = Field(default="", alias="SENTRY_DSN")
     allowed_origins: list[str] = Field(default_factory=list, alias="ALLOWED_ORIGINS")
+    enable_debug_routes: bool = Field(default=False, alias="ENABLE_DEBUG_ROUTES")
 
     @field_validator("gemini_api_keys", "allowed_origins", mode="before")
     @classmethod

@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from starlette import status
 
 from api.middleware import AuthContextMiddleware, LoggingMiddleware, RequestIDMiddleware
-from api.routes import auth, health, parse, profile, runs, share, templates
+from api.routes import auth, debug, health, parse, profile, runs, share, templates
 from infra.settings import Settings
 
 logger = structlog.get_logger(__name__)
@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
             {"url": "https://api.qsim-playground.com", "description": "Production"},
         ],
     )
+    app.state.enable_debug_routes = bool(settings and settings.enable_debug_routes)
     _register_exception_handlers(app)
     _register_routers(app)
     _register_middleware(app, _allowed_origins(settings))
@@ -82,6 +83,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(parse.router)
     app.include_router(share.router)
     app.include_router(templates.router)
+    app.include_router(debug.router)
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
@@ -109,7 +111,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail},
-            headers=exc.headers,
+            headers={**(exc.headers or {}), "X-Request-ID": request_id},
         )
 
     @app.exception_handler(Exception)
@@ -125,6 +127,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Internal server error", "request_id": request_id},
+            headers={"X-Request-ID": request_id},
         )
 
 
